@@ -1,10 +1,10 @@
 import React from 'react';
 
-/** Original Sampark NE mark: a road winding through hills to a destination. Deliberately
+/** Original Setu mark: a road winding through hills to a destination. Deliberately
  *  not the State Emblem of India, whose use is restricted by law to
  *  actual government bodies. */
 export const BrandMark: React.FC<{ size?: number }> = ({ size = 52 }) => (
-  <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Sampark NE logo">
+  <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Setu logo">
     <path d="M32 3 L57 12 V31 C57 46 46 56 32 61 C18 56 7 46 7 31 V12 Z" fill="#0b3068" />
     <path d="M32 7 L53 14.5 V31 C53 43.5 44 52 32 56.5 C20 52 11 43.5 11 31 V14.5 Z" fill="none" stroke="#ff9933" strokeWidth="2" />
     <path d="M11 40 L22 26 L30 34 L40 22 L53 40 Z" fill="#138808" opacity="0.9" />

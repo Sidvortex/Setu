@@ -1,5 +1,5 @@
 /**
- * Client for the Sampark NE backend: region-wide road network, routing,
+ * Client for the Setu backend: region-wide road network, routing,
  * cut-off impact (backend/logistics.py) and shared road status (road_status.py).
  */
 import { getBackendUrl } from '../utils/backendUrl';

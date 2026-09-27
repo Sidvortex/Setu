@@ -1,4 +1,4 @@
-# Sampark NE — setup
+# Setu — setup
 
 ## Backend
 
@@ -15,7 +15,7 @@ shows the account count and whether the BhooSuraksha link is configured.
 
 ### Connecting BhooSuraksha (landslide risk)
 
-Run BhooSuraksha's backend (its repo, port 8000), then start Sampark NE with:
+Run BhooSuraksha's backend (its repo, port 8000), then start Setu with:
 
 ```bash
 BHOOSURAKSHA_API_URL=http://localhost:8000 uvicorn app:app --reload --port 8100

@@ -27,7 +27,7 @@ const DICTIONARY: Record<string, { en: string; hi: string }> = {
   'nav.contactUs': { en: 'Contact us', hi: 'संपर्क करें' },
   'nav.feedback': { en: 'Feedback', hi: 'प्रतिक्रिया' },
 
-  'brand.name': { en: 'Sampark NE', hi: 'सम्पर्क NE' },
+  'brand.name': { en: 'Setu', hi: 'सम्पर्क NE' },
   'brand.tagline': { en: 'Road Accessibility & Supply Logistics for the North East', hi: 'पूर्वोत्तर के लिए सड़क पहुँच एवं आपूर्ति लॉजिस्टिक्स' },
   'brand.disclaimer': { en: 'A student initiative · Not an official Government of India website', hi: 'एक छात्र पहल · यह भारत सरकार की आधिकारिक वेबसाइट नहीं है' },
 

@@ -1,5 +1,5 @@
 """
-Shared storage for Sampark NE's operational data (road status, and later
+Shared storage for Setu's operational data (road status, and later
 incidents / shipments). Same pattern as auth.py: Turso when
 TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set, otherwise a local SQLite file
 (data/sampark.db). Local SQLite is fine for development but does not persist

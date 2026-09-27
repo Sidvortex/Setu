@@ -26,7 +26,7 @@ export const OpsLayout: React.FC = () => {
         <div className="h-16 px-4 sm:px-6 flex items-center justify-between bg-gov-navy text-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded bg-white flex items-center justify-center"><BrandMark size={32} /></div>
-            <div><div className="font-semibold">Sampark NE</div><div className="text-xs text-white/70">Operations Dashboard · North Eastern Region</div></div>
+            <div><div className="font-semibold">Setu</div><div className="text-xs text-white/70">Operations Dashboard · North Eastern Region</div></div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="hidden sm:inline text-white/70">{user?.username}</span>

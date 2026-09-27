@@ -81,9 +81,9 @@ export const Home: React.FC = () => {
 
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid gap-6 lg:grid-cols-2">
           <div id="about" className="bg-white border border-slate-800 rounded-lg p-6 scroll-mt-16">
-            <h2 className="text-lg font-semibold text-gov-navy border-l-4 border-gov-saffron pl-3 mb-3">About Sampark NE</h2>
+            <h2 className="text-lg font-semibold text-gov-navy border-l-4 border-gov-saffron pl-3 mb-3">About Setu</h2>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Sampark NE (सम्पर्क, "connection") is an AI-enabled logistics and road-accessibility platform for India's
+              Setu (सम्पर्क, "connection") is an AI-enabled logistics and road-accessibility platform for India's
               North Eastern Region. Officials mark blocked roads; the platform shows which villages and health facilities
               lose access, and finds alternate routes for supply vehicles. Predicted landslide risk comes from our sister
               project, <a href={BHOOSURAKSHA_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">BhooSuraksha</a>.
@@ -115,7 +115,7 @@ export const Home: React.FC = () => {
             <h2 className="text-lg font-semibold text-gov-navy border-l-4 border-gov-saffron pl-3 mb-3 flex items-center gap-2">Data sources <Truck className="w-5 h-5 text-slate-400" /></h2>
             <p className="text-sm text-slate-300">
               Road network, villages and facilities: PMGSY GeoSadak, Ministry of Rural Development (Government Open Data
-              License – India). The raw data came as 53,299 disconnected road fragments; Sampark NE repairs it
+              License – India). The raw data came as 53,299 disconnected road fragments; Setu repairs it
               into one routable network for all 8 states (53,299 fragments → 94% connected). Map tiles © OpenStreetMap contributors. Travel times use assumed
               hill-road speeds until vehicle tracking provides measured ones.
             </p>

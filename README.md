@@ -1,10 +1,10 @@
-# Sampark NE (सम्पर्क NE)
+# Setu (सम्पर्क NE)
 
 **Road accessibility & supply logistics for India's North Eastern Region.**
 SIH problem statement: AI-enabled Smart Logistics & Accessibility Intelligence
 Platform for NER. Setup: **[SETUP.md](SETUP.md)**.
 
-Sampark NE answers one question for district officials and supply planners:
+Setu answers one question for district officials and supply planners:
 *if these roads are blocked, who can we still reach, and how?*
 
 ## What works now — all 8 North Eastern states
@@ -55,13 +55,13 @@ and a route or impact query takes well under a second.
 
 ## Two projects, one system
 
-| | Sampark NE (this repo) | BhooSuraksha |
+| | Setu (this repo) | BhooSuraksha |
 |---|---|---|
 | Purpose | Logistics & road accessibility | Landslide early warning |
 | Repo | github.com/Sidvortex/SamparkNE | github.com/Sidvortex/BhooSuraksha |
 | Link | calls BhooSuraksha's `/api/predict/region` for today's risk | serves risk predictions |
 
-Sampark NE keeps working if BhooSuraksha is down; the risk panel simply hides.
+Setu keeps working if BhooSuraksha is down; the risk panel simply hides.
 
 ## Honest limits
 

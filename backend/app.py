@@ -1,5 +1,5 @@
 """
-Sampark NE backend: road accessibility & supply logistics for the North East.
+Setu backend: road accessibility & supply logistics for the North East.
 
   /api/auth/...           officials' login (auth.py)
   /api/logistics/...      road network, routing, cut-off impact (logistics.py)
@@ -20,7 +20,7 @@ import logistics
 import risk_client
 import road_status
 
-app = FastAPI(title="Sampark NE API")
+app = FastAPI(title="Setu API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(logistics.router)
 app.include_router(road_status.router)

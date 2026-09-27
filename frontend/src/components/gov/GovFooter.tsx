@@ -14,7 +14,7 @@ export const GovFooter: React.FC = () => (
         <div className="flex items-center gap-3 mb-3">
           <BrandMark size={44} />
           <div>
-            <div className="font-bold text-lg">सम्पर्क NE | Sampark NE</div>
+            <div className="font-bold text-lg">सम्पर्क NE | Setu</div>
             <div className="text-xs text-white/70">Road Accessibility & Supply Logistics</div>
           </div>
         </div>
@@ -48,7 +48,7 @@ export const GovFooter: React.FC = () => (
     </div>
     <div className="border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/60">
-        <span>© {new Date().getFullYear()} Sampark NE project team. Not an official Government of India website.</span>
+        <span>© {new Date().getFullYear()} Setu project team. Not an official Government of India website.</span>
         <span>Roads: PMGSY GeoSadak (MoRD, GODL) · Map data © OpenStreetMap contributors</span>
       </div>
     </div>

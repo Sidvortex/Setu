@@ -1,13 +1,13 @@
 """
 Link to BhooSuraksha, the sister project that provides landslide risk.
 
-Sampark NE doesn't run landslide models itself: it asks BhooSuraksha's API
+Setu doesn't run landslide models itself: it asks BhooSuraksha's API
 (POST /api/predict/region) for the current risk at the district, and shows it
 as "predicted disruption risk". Set BHOOSURAKSHA_API_URL to BhooSuraksha's
 backend (e.g. http://localhost:8000 locally, or its Cloud Run URL).
 
 If the variable isn't set or BhooSuraksha is unreachable, this returns None
-and the dashboard simply omits the risk panel — Sampark NE never breaks
+and the dashboard simply omits the risk panel — Setu never breaks
 because the risk engine is down.
 """
 import json
