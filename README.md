@@ -1,4 +1,4 @@
-# Setu (सम्पर्क NE)
+# Setu (सेतु)
 
 **Road accessibility & supply logistics for India's North Eastern Region.**
 SIH problem statement: AI-enabled Smart Logistics & Accessibility Intelligence
