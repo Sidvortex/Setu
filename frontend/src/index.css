@@ -1,0 +1,335 @@
+@import "tailwindcss";
+
+/*
+ * Soviet.nvim-inspired palette (https://github.com/rezniqov/soviet.nvim)
+ * mapped onto Tailwind's default color tokens. Because every component in
+ * this app uses named tokens (bg-slate-900, text-blue-400, etc.) rather
+ * than raw hex values, overriding the tokens here recolors the whole app
+ * without touching component files.
+ */
+/*
+ * Government-portal light theme (inspired by ISRO / IRCTC / india.gov.in).
+ * Components use named Tailwind tokens written for a dark UI, so each scale
+ * is remapped for a light UI: the deep 800-950 shades (used as dark tinted
+ * panels/borders) become pale tints, and 200-400 (used as light text on
+ * dark) become dark, readable text. 500-700 stay saturated for buttons.
+ */
+@theme {
+  --font-sans: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+
+  /* Gov identity colours */
+  --color-gov-navy: #0b3068;
+  --color-gov-navy-dark: #061f47;
+  --color-gov-navy-light: #1a4a8f;
+  --color-gov-saffron: #ff9933;
+  --color-gov-green: #138808;
+  --color-gov-page: #eef2f7;
+
+  /* slate inverted: 50 = darkest text, 900 = card white, 950 = recessed grey */
+  --color-slate-50: #0b1220;
+  --color-slate-100: #0f172a;
+  --color-slate-200: #1e293b;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-600: #94a3b8;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #ffffff;
+  --color-slate-950: #f4f6f9;
+
+  /* navy (primary) */
+  --color-blue-50: #f0f5fc;
+  --color-blue-100: #e1ebf8;
+  --color-blue-200: #0a2a5e;
+  --color-blue-300: #123f86;
+  --color-blue-400: #1c4f9e;
+  --color-blue-500: #2a5fb0;
+  --color-blue-600: #174a96;
+  --color-blue-700: #0b3068;
+  --color-blue-800: #b7cbe8;
+  --color-blue-900: #dde8f7;
+  --color-blue-950: #eef4fc;
+  /* sky */
+  --color-sky-50: #f0f8fc;
+  --color-sky-100: #e0f1f9;
+  --color-sky-200: #0b4a66;
+  --color-sky-300: #0e5a7c;
+  --color-sky-400: #0f6d96;
+  --color-sky-500: #1487b8;
+  --color-sky-600: #0f6d96;
+  --color-sky-700: #0b5a7c;
+  --color-sky-800: #aad6ea;
+  --color-sky-900: #d9eef8;
+  --color-sky-950: #eef8fc;
+  /* cyan */
+  --color-cyan-50: #ecf9fc;
+  --color-cyan-100: #d8f1f6;
+  --color-cyan-200: #0b4a5c;
+  --color-cyan-300: #0e5a70;
+  --color-cyan-400: #0e7490;
+  --color-cyan-500: #0891b2;
+  --color-cyan-600: #0e7490;
+  --color-cyan-700: #155e75;
+  --color-cyan-800: #a5dbe8;
+  --color-cyan-900: #d8f1f6;
+  --color-cyan-950: #ecf9fc;
+  /* teal -> India green (citizen accent) */
+  --color-teal-50: #f0faf1;
+  --color-teal-100: #dcf2df;
+  --color-teal-200: #0c4f18;
+  --color-teal-300: #0f6320;
+  --color-teal-400: #138a2b;
+  --color-teal-500: #1b9a36;
+  --color-teal-600: #0f7a26;
+  --color-teal-700: #0b6620;
+  --color-teal-800: #a8d9b1;
+  --color-teal-900: #d9f0dd;
+  --color-teal-950: #eef9f0;
+  /* green */
+  --color-green-50: #f0faf1;
+  --color-green-100: #dcf2df;
+  --color-green-200: #0c4f18;
+  --color-green-300: #0f6320;
+  --color-green-400: #138a2b;
+  --color-green-500: #1b9a36;
+  --color-green-600: #0f7a26;
+  --color-green-700: #0b6620;
+  --color-green-800: #a8d9b1;
+  --color-green-900: #d9f0dd;
+  --color-green-950: #eef9f0;
+  /* emerald (safe / low risk) */
+  --color-emerald-50: #ecf8f1;
+  --color-emerald-100: #d6f1e3;
+  --color-emerald-200: #064e2b;
+  --color-emerald-300: #065f35;
+  --color-emerald-400: #047a43;
+  --color-emerald-500: #059652;
+  --color-emerald-600: #047a43;
+  --color-emerald-700: #056638;
+  --color-emerald-800: #a7dfc2;
+  --color-emerald-900: #d6f1e3;
+  --color-emerald-950: #ecf8f1;
+  /* red (danger / critical) */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fde3e3;
+  --color-red-200: #7a1414;
+  --color-red-300: #991b1b;
+  --color-red-400: #c62828;
+  --color-red-500: #dc2626;
+  --color-red-600: #c62828;
+  --color-red-700: #a51d1d;
+  --color-red-800: #f3b7b7;
+  --color-red-900: #fbdcdc;
+  --color-red-950: #fdeeee;
+  /* rose */
+  --color-rose-50: #fff1f3;
+  --color-rose-100: #ffe4e8;
+  --color-rose-200: #7a1426;
+  --color-rose-300: #971b32;
+  --color-rose-400: #c2243f;
+  --color-rose-500: #d92d4a;
+  --color-rose-600: #c2243f;
+  --color-rose-700: #a11d34;
+  --color-rose-800: #f5b6c1;
+  --color-rose-900: #fcdce2;
+  --color-rose-950: #fef0f2;
+  /* orange -> saffron (high risk) */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #7a3a06;
+  --color-orange-300: #9a4a07;
+  --color-orange-400: #c2610c;
+  --color-orange-500: #f28c28;
+  --color-orange-600: #e07b13;
+  --color-orange-700: #c2610c;
+  --color-orange-800: #f8cfa3;
+  --color-orange-900: #fde6cc;
+  --color-orange-950: #fef4e8;
+  /* amber (warnings) */
+  --color-amber-50: #fdf8e8;
+  --color-amber-100: #fbefcf;
+  --color-amber-200: #6b4a05;
+  --color-amber-300: #85600a;
+  --color-amber-400: #a8770d;
+  --color-amber-500: #d99a0e;
+  --color-amber-600: #b98309;
+  --color-amber-700: #946a08;
+  --color-amber-800: #f1d99a;
+  --color-amber-900: #fbefcf;
+  --color-amber-950: #fdf8e8;
+  /* yellow */
+  --color-yellow-50: #fefbe8;
+  --color-yellow-100: #fdf5c9;
+  --color-yellow-200: #6b5a05;
+  --color-yellow-300: #85700a;
+  --color-yellow-400: #a3870b;
+  --color-yellow-500: #d4ad0c;
+  --color-yellow-600: #b3930a;
+  --color-yellow-700: #8f7508;
+  --color-yellow-800: #f0e08f;
+  --color-yellow-900: #fbf3c8;
+  --color-yellow-950: #fefae9;
+  /* indigo / purple (AI assistant accent) */
+  --color-indigo-50: #f3f1fd;
+  --color-indigo-100: #e4e1f9;
+  --color-indigo-200: #261f66;
+  --color-indigo-300: #3b2f86;
+  --color-indigo-400: #4c3fa6;
+  --color-indigo-500: #5b4fc0;
+  --color-indigo-600: #4338a8;
+  --color-indigo-700: #372d8f;
+  --color-indigo-800: #c3bdf0;
+  --color-indigo-900: #e4e1f9;
+  --color-indigo-950: #f3f1fd;
+  --color-purple-50: #f7f1fd;
+  --color-purple-100: #ece1f9;
+  --color-purple-200: #3d1f66;
+  --color-purple-300: #512f86;
+  --color-purple-400: #653fa6;
+  --color-purple-500: #774fc0;
+  --color-purple-600: #5d38a8;
+  --color-purple-700: #4a2d8f;
+  --color-purple-800: #d3bdf0;
+  --color-purple-900: #ece1f9;
+  --color-purple-950: #f7f1fd;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+
+  code, kbd, samp, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+}
+
+/* Custom scrollbar for command center panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+/* Leaflet map styling */
+.leaflet-container {
+  background-color: #e8edf3 !important;
+  font-family: inherit;
+}
+
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.35);
+  border-radius: 0.5rem;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* ---- Real accessibility toolbar effects (src/context/A11yContext.tsx) ---- */
+:root {
+  --a11y-font-scale: 1;
+}
+html {
+  font-size: calc(16px * var(--a11y-font-scale));
+}
+
+.a11y-high-contrast {
+  filter: contrast(1.35) saturate(1.15);
+}
+.a11y-high-contrast body {
+  background: #000 !important;
+}
+
+.a11y-big-cursor,
+.a11y-big-cursor * {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><path d="M2 2l7.6 20 2.3-8.1L20 11.6z" fill="black" stroke="white" stroke-width="1.5"/></svg>') 4 4, auto !important;
+}
+
+.a11y-highlight-links a {
+  outline: 2px solid #d1b078 !important;
+  outline-offset: 2px;
+  background: rgba(209, 176, 120, 0.12) !important;
+}
+
+.a11y-dyslexia-font,
+.a11y-dyslexia-font * {
+  font-family: 'Comic Sans MS', 'Comic Sans', 'Andika', sans-serif !important;
+  letter-spacing: 0.02em;
+}
+
+.a11y-extra-line-height,
+.a11y-extra-line-height p,
+.a11y-extra-line-height li,
+.a11y-extra-line-height span {
+  line-height: 1.9 !important;
+}
+
+.a11y-extra-letter-spacing,
+.a11y-extra-letter-spacing p,
+.a11y-extra-letter-spacing li,
+.a11y-extra-letter-spacing span {
+  letter-spacing: 0.06em !important;
+  word-spacing: 0.12em !important;
+}
+
+.a11y-reduce-motion *,
+.a11y-reduce-motion *::before,
+.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Skip-to-content link: visually hidden until focused via Tab */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 3000;
+  background: #4a7a9e;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.skip-to-content:focus {
+  left: 0;
+}
+
+/* ---- Gov-portal alerts ticker ---- */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-track {
+  animation: ticker-scroll 45s linear infinite;
+}
+.ticker-viewport:hover .ticker-track {
+  animation-play-state: paused;
+}
+.a11y-reduce-motion .ticker-track {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}

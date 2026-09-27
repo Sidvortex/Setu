@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn>=0.29
+bcrypt>=4.1
+pyjwt>=2.8
+libsql-client>=0.3
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+pyproj>=3.6

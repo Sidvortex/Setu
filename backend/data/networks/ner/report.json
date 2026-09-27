@@ -1,0 +1,39 @@
+{
+  "states": [
+    "ArunachalPradesh",
+    "Assam",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Sikkim",
+    "Tripura"
+  ],
+  "tolerance_m": 30,
+  "raw_segments": 59313,
+  "raw_pieces": 53299,
+  "connectors_added": 19094,
+  "piece_joins_added": 447,
+  "piece_join_max_m": 59.7,
+  "routable_segments": 277986,
+  "junctions": 208034,
+  "pieces_after": 1304,
+  "largest_network_pct": 93.9,
+  "road_km": 180218.0,
+  "villages": 65189,
+  "population": 40895337,
+  "population_within_1km_of_main_network_pct": 89.5,
+  "districts": 98,
+  "build_seconds": 99.6,
+  "speed_assumptions_kmh": {
+    "NH": 35,
+    "SH": 30,
+    "MDR": 25,
+    "RR(ODR)": 20,
+    "RR(VR)": 15,
+    "RR(TRACK)": 8,
+    "BR": 15,
+    "OT": 15,
+    "connector": 5
+  }
+}
