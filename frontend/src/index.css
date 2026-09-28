@@ -333,3 +333,11 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .ticker-track { animation: none; }
 }
+
+/* Dark map style (2D): OSM tiles colour-inverted into a Google-Maps-like dark look */
+.map-dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6);
+}
+.map-dark.leaflet-container {
+  background: #1f2430 !important;
+}
