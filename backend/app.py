@@ -5,6 +5,7 @@ Setu backend: road accessibility & supply logistics for the North East.
   /api/logistics/...      road network, routing, cut-off impact (logistics.py)
   /api/roads/...          shared road status: blocked / reopened (road_status.py)
   /api/connectivity/...   district connectivity summary (road_status.py)
+  /api/incidents/...      field incident reports with GPS + photo (incidents.py)
 
 Landslide risk comes from the sister project BhooSuraksha over HTTP
 (risk_client.py, BHOOSURAKSHA_API_URL).
@@ -16,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import auth
+import incidents
 import logistics
 import risk_client
 import road_status
@@ -24,6 +26,7 @@ app = FastAPI(title="Setu API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(logistics.router)
 app.include_router(road_status.router)
+app.include_router(incidents.router)
 
 
 class LoginRequest(BaseModel):
