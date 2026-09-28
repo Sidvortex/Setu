@@ -1,8 +1,8 @@
 /**
  * External links used across the header, utility bar and footer.
- * REPO_URL: this project's repo (github.com/Sidvortex/SamparkNE).
+ * REPO_URL: this project's repo (github.com/Sidvortex/Setu).
  */
-export const REPO_URL = 'https://github.com/Sidvortex/SamparkNE';
+export const REPO_URL = 'https://github.com/Sidvortex/Setu';
 /** Sister project: the landslide risk engine Setu consumes. */
 export const BHOOSURAKSHA_REPO_URL = 'https://github.com/Sidvortex/BhooSuraksha';
 export const DOCS_URL = `${REPO_URL}#readme`;
