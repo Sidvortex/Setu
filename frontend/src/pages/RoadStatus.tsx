@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { PublicHeader } from '../components/PublicHeader';
 import { PageBanner } from '../components/gov/PageBanner';
-import { RoadStatusMap } from '../components/RoadStatusMap';
+import { RoadMapView } from '../components/map/RoadMapView';
 import { DistrictPicker } from '../components/DistrictPicker';
 import { logisticsApi, roadsApi, ConnectivitySummary, District, RoadFeatures, DEFAULT_DISTRICT_ID } from '../services/logistics';
 
@@ -17,7 +17,8 @@ export const RoadStatus: React.FC = () => {
     logisticsApi.region().then((r) => setDistricts(r.districts)).catch((e) => setErr(e.message));
     roadsApi.summary().then(setS).catch((e) => setErr(e.message));
   }, []);
-  useEffect(() => { setRoads(null); logisticsApi.network(districtId).then((r) => setRoads(r.roads)).catch((e) => setErr(e.message)); }, [districtId]);
+  // keep showing the previous district until the new one arrives, so the map (and its 3D view) stays mounted
+  useEffect(() => { logisticsApi.network(districtId).then((r) => setRoads(r.roads)).catch((e) => setErr(e.message)); }, [districtId]);
   const district = districts.find((d) => d.district_id === districtId);
   const here = s?.blocked.filter((b) => b.district_id === districtId) ?? [];
 
@@ -32,7 +33,7 @@ export const RoadStatus: React.FC = () => {
         <div className="grid lg:grid-cols-[1fr_360px] gap-4">
           <div className="bg-white border border-slate-800 rounded-xl overflow-hidden">
             {err && <p className="p-6 text-sm text-red-700">Couldn't load road status: {err}</p>}
-            {roads && s ? <RoadStatusMap key={districtId} roads={roads} blockedIds={s.blocked.map((b) => b.edge_id)}
+            {roads && s ? <RoadMapView mapKey={districtId} roads={roads} blockedIds={s.blocked.map((b) => b.edge_id)}
                                          cutOff={s.health_facilities_cut_off.filter((f) => f.district === district?.name)} />
               : !err && <p className="p-6 text-sm text-slate-400">Loading map…</p>}
           </div>

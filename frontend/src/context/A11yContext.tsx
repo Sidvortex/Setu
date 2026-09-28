@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: A11ySettings = {
   reduceMotion: false,
 };
 
-const STORAGE_KEY = 'samparkne_a11y_settings';
+const STORAGE_KEY = 'setu_a11y_settings';
 
 interface A11yContextValue extends A11ySettings {
   increaseFont: () => void;

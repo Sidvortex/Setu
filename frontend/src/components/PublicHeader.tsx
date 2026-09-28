@@ -48,6 +48,7 @@ export const PublicHeader: React.FC = () => {
   const menu: Group[] = [
     { label: t('nav.home'), to: '/' },
     { label: t('nav.roadStatus'), to: '/road-status' },
+    { label: t('nav.routeCheck'), to: '/route' },
     { label: t('nav.about'), items: [
       { label: 'About Setu', to: '/#about' },
       { label: 'Data sources', to: '/#data' },
@@ -78,7 +79,7 @@ export const PublicHeader: React.FC = () => {
           <Link to="/" className="flex items-center gap-3 min-w-0">
             <BrandMark size={56} />
             <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-gov-navy leading-tight">सम्पर्क NE <span className="text-slate-500 font-normal">|</span> Setu</div>
+              <div className="text-xl sm:text-2xl font-bold text-gov-navy leading-tight">सेतु <span className="text-slate-500 font-normal">|</span> Setu</div>
               <div className="text-xs sm:text-sm text-slate-300">{t('brand.tagline')}</div>
               <div className="text-xs text-slate-500 hidden sm:block">{t('brand.disclaimer')}</div>
             </div>

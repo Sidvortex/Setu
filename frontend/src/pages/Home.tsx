@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Route, PhoneCall, LogIn, ArrowRight, Ban, Users, Hospital, Truck } from 'lucide-react';
+import { Route, PhoneCall, LogIn, Ban, Users, Hospital, Truck, Navigation } from 'lucide-react';
 import { PublicHeader } from '../components/PublicHeader';
 import { roadsApi, ConnectivitySummary } from '../services/logistics';
 import { HELPLINES } from '../data/helplines';
@@ -66,9 +66,10 @@ export const Home: React.FC = () => {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 -mt-6 relative grid sm:grid-cols-3 gap-3">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 -mt-6 relative grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { to: '/road-status', icon: Route, title: 'Live Road Status', desc: 'Which roads are blocked and who is cut off' },
+            { to: '/route', icon: Navigation, title: 'Check a Route', desc: 'Fastest open route between any two places' },
             { to: '/#helplines', icon: PhoneCall, title: 'Emergency Helplines', desc: '112, NDMA, SDRF, district control rooms' },
             { to: '/login', icon: LogIn, title: 'For Officials', desc: 'Report blockages, plan routes, see impact' },
           ].map(({ to, icon: Icon, title, desc }) => (
@@ -83,13 +84,13 @@ export const Home: React.FC = () => {
           <div id="about" className="bg-white border border-slate-800 rounded-lg p-6 scroll-mt-16">
             <h2 className="text-lg font-semibold text-gov-navy border-l-4 border-gov-saffron pl-3 mb-3">About Setu</h2>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Setu (सम्पर्क, "connection") is an AI-enabled logistics and road-accessibility platform for India's
+              Setu (सेतु, "bridge") is an AI-enabled logistics and road-accessibility platform for India's
               North Eastern Region. Officials mark blocked roads; the platform shows which villages and health facilities
               lose access, and finds alternate routes for supply vehicles. Predicted landslide risk comes from our sister
               project, <a href={BHOOSURAKSHA_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">BhooSuraksha</a>.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              {[['Now', 'Live road status, cut-off impact, route planning'], ['Next', 'Field incident reports, vehicle & shipment tracking']].map(([k, v]) => (
+              {[['Now', 'Live road status, cut-off impact, route planning, field incident reports'], ['Next', 'Vehicle & shipment tracking']].map(([k, v]) => (
                 <div key={k} className="bg-slate-950 rounded-lg p-3"><div className="font-semibold text-gov-navy">{k}</div><div className="text-xs text-slate-400">{v}</div></div>
               ))}
             </div>
