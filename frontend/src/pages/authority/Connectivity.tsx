@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Ban, Users, Hospital, MapPinned, Mountain, RotateCcw, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { RoadStatusMap } from '../../components/RoadStatusMap';
+import { RoadMapView } from '../../components/map/RoadMapView';
 import { DistrictPicker } from '../../components/DistrictPicker';
 import {
   logisticsApi, roadsApi, ConnectivitySummary, District, RegionReport, RoadFeatures,
@@ -34,7 +34,7 @@ export const Connectivity: React.FC = () => {
   useEffect(() => { logisticsApi.region().then((r) => { setDistricts(r.districts); setReport(r.report); }).catch((e) => setErr(e.message)); }, []);
   const refresh = useCallback(() => roadsApi.summary(districtId).then(setS).catch((e) => setErr(e.message)), [districtId]);
   useEffect(() => {
-    setRoads(null); setSelected(null);
+    setSelected(null); // roads stay until the new district arrives, so the map stays mounted
     logisticsApi.network(districtId).then((r) => setRoads(r.roads)).catch((e) => setErr(e.message));
     refresh();
   }, [districtId, refresh]);
@@ -103,7 +103,7 @@ export const Connectivity: React.FC = () => {
 
       <div className="grid xl:grid-cols-[1fr_360px] gap-4">
         <div className="bg-white border border-slate-800 rounded-xl overflow-hidden">
-          {roads && s ? <RoadStatusMap key={districtId} roads={roads} blockedIds={blockedIds} cutOff={healthHere} selectedId={selected} onRoadClick={setSelected} height="h-[600px]" />
+          {roads && s ? <RoadMapView mapKey={districtId} roads={roads} blockedIds={blockedIds} cutOff={healthHere} selectedId={selected} onRoadClick={setSelected} height="h-[600px]" />
             : <p className="p-6 text-sm text-slate-400">Loading {district?.name ?? 'district'}…</p>}
         </div>
 

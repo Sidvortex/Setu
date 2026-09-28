@@ -1,23 +1,20 @@
 /**
  * Route Planner — anywhere in the North Eastern Region.
- * Pick a start and destination (district → place), starting from the roads
- * currently reported blocked. Click roads on the map to add what-if
- * blockages (not saved) and see the detour, the delay, or that the
- * destination is cut off. Travel times use assumed hill-road speeds.
+ * Pick a start and destination (district → place); routes avoid the roads
+ * currently reported blocked. In 'ops' mode officials can also click roads to
+ * add what-if blockages (not saved) and see who would be cut off; the public
+ * mode shows routes only. Travel times use assumed hill-road speeds.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Route, Ban, RotateCcw, AlertTriangle, CheckCircle2, Clock, Loader2, Unlink } from 'lucide-react';
 import { DistrictPicker } from './DistrictPicker';
+import { RoadMapView } from './map/RoadMapView';
+import { MapMarker, RouteLine } from './map/mapTypes';
 import {
   logisticsApi, roadsApi, District, ImpactResult, LatLon, Place, RoadFeatures, RouteResult, DEFAULT_DISTRICT_ID,
 } from '../services/logistics';
 
 interface Endpoint extends LatLon { label: string }
-const ROAD_STYLE: Record<string, { color: string; weight: number }> = {
-  NH: { color: '#0b3068', weight: 4 }, SH: { color: '#1c4f9e', weight: 3.5 }, MDR: { color: '#2a5fb0', weight: 3 },
-};
-const baseStyle = (c: string, main: boolean) => ROAD_STYLE[c] ?? { color: main ? '#64748b' : '#a8b3c2', weight: 2 };
 
 const PlaceChooser: React.FC<{
   title: string; districts: District[]; districtId: number; onDistrict: (id: number) => void;
@@ -40,11 +37,8 @@ const PlaceChooser: React.FC<{
   </div>
 );
 
-export const RoutePlanner: React.FC = () => {
-  const mapDiv = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const roadsLayer = useRef<L.GeoJSON | null>(null);
-  const overlay = useRef<L.LayerGroup | null>(null);
+export const RoutePlanner: React.FC<{ mode?: 'ops' | 'public' }> = ({ mode = 'ops' }) => {
+  const isOps = mode === 'ops';
 
   const [districts, setDistricts] = useState<District[]>([]);
   const [fromD, setFromD] = useState(DEFAULT_DISTRICT_ID);
@@ -69,34 +63,6 @@ export const RoutePlanner: React.FC = () => {
   useEffect(() => { logisticsApi.places(fromD).then(setFromPlaces).catch(() => {}); logisticsApi.network(fromD).then((r) => setRoads(r.roads)).catch(() => {}); }, [fromD]);
   useEffect(() => { logisticsApi.places(toD).then(setToPlaces).catch(() => {}); }, [toD]);
 
-  // Map for the starting district's roads (rebuilt when it changes)
-  useEffect(() => {
-    if (!roads || !mapDiv.current) return;
-    const map = L.map(mapDiv.current);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors · Roads: PMGSY GeoSadak (MoRD)', maxZoom: 18 }).addTo(map);
-    const layer = L.geoJSON(roads, {
-      style: (f) => ({ ...baseStyle(f?.properties.category, f?.properties.in_main_network), opacity: 0.9 }),
-      onEachFeature: (f, l) => {
-        l.bindTooltip(`${f.properties.road_name || 'Unnamed road'} · ${f.properties.category}`, { sticky: true });
-        l.on('click', () => setWhatIf((w) => (w.includes(f.properties.edge_id) ? w.filter((x) => x !== f.properties.edge_id) : [...w, f.properties.edge_id])));
-      },
-    }).addTo(map);
-    map.fitBounds(layer.getBounds(), { padding: [10, 10] });
-    roadsLayer.current = layer; overlay.current = L.layerGroup().addTo(map); mapRef.current = map;
-    if (import.meta.env.DEV) (window as unknown as { __routeMap?: L.Map }).__routeMap = map; // debugging aid in dev only
-    return () => { map.remove(); mapRef.current = null; };
-  }, [roads]);
-
-  useEffect(() => {
-    roadsLayer.current?.eachLayer((layer) => {
-      const l = layer as L.Path & { feature?: GeoJSON.Feature<GeoJSON.LineString, { edge_id: number; category: string; in_main_network: boolean }> };
-      const p = l.feature?.properties; if (!p) return;
-      if (reported.includes(p.edge_id)) l.setStyle({ color: '#c62828', weight: 7, dashArray: undefined });
-      else if (whatIf.includes(p.edge_id)) l.setStyle({ color: '#c62828', weight: 6, dashArray: '6 6' });
-      else l.setStyle({ ...baseStyle(p.category, p.in_main_network), dashArray: undefined });
-    });
-  }, [reported, whatIf, roads]);
-
   useEffect(() => {
     if (!origin || !destination) return;
     let stale = false; setBusy(true); setError(null);
@@ -114,25 +80,26 @@ export const RoutePlanner: React.FC = () => {
     return () => { stale = true; };
   }, [whatIf, reported]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    const g = overlay.current, map = mapRef.current; if (!g || !map) return;
-    g.clearLayers();
-    const ll = (c: [number, number][][]) => c.map((line) => line.map(([x, y]) => [y, x] as [number, number]));
-    const drawn: L.Polyline[] = [];
-    // non-interactive so clicks reach the roads underneath (those are what users block)
-    if (route?.normal && route.status !== 'ok') drawn.push(L.polyline(ll(route.normal.geometry.coordinates), { color: '#64748b', weight: 5, dashArray: '4 8', interactive: false }).addTo(g));
-    if (route?.current) drawn.push(L.polyline(ll(route.current.geometry.coordinates), { color: route.status === 'rerouted' ? '#e07b13' : '#138808', weight: 6, interactive: false }).addTo(g));
-    [[origin, '#0b3068', 'From'], [destination, '#c62828', 'To']].forEach(([p, c, t]) => {
-      const e = p as Endpoint | null; if (e) L.circleMarker([e.lat, e.lon], { radius: 9, color: '#fff', weight: 2, fillColor: c as string, fillOpacity: 1 }).bindTooltip(`${t}: ${e.label}`).addTo(g);
-    });
-    if (drawn.length) map.fitBounds(L.featureGroup(drawn).getBounds(), { padding: [30, 30] });
-  }, [route, origin, destination]);
+  const routeLines = useMemo<RouteLine[]>(() => {
+    const lines: RouteLine[] = [];
+    if (route?.normal && route.status !== 'ok') lines.push({ coordinates: route.normal.geometry.coordinates, color: '#64748b', dashed: true });
+    if (route?.current) lines.push({ coordinates: route.current.geometry.coordinates, color: route.status === 'rerouted' ? '#e07b13' : '#138808' });
+    return lines;
+  }, [route]);
+  const markers = useMemo<MapMarker[]>(() => [
+    ...(origin ? [{ lat: origin.lat, lon: origin.lon, color: '#0b3068', label: `From: ${origin.label}` }] : []),
+    ...(destination ? [{ lat: destination.lat, lon: destination.lon, color: '#c62828', label: `To: ${destination.label}` }] : []),
+  ], [origin, destination]);
+  const toggleWhatIf = (id: number) => setWhatIf((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
 
   return (
     <div className="space-y-4">
       <div className="bg-white border border-slate-800 rounded-xl p-4">
         <h2 className="text-lg font-semibold text-gov-navy flex items-center gap-2"><Route className="w-5 h-5" /> Route Planner — North Eastern Region</h2>
-        <p className="text-xs text-slate-400">Starts from the {reported.length} road{reported.length === 1 ? '' : 's'} currently reported blocked. Click roads on the map to add what-if blockages (not saved). Travel times use assumed hill-road speeds.</p>
+        <p className="text-xs text-slate-400">
+          Routes avoid the {reported.length} road{reported.length === 1 ? '' : 's'} currently reported blocked.
+          {isOps && ' Click roads on the map to add what-if blockages (not saved).'} Travel times are estimates at typical hill-road speeds.
+        </p>
       </div>
       <div className="grid lg:grid-cols-[360px_1fr] gap-4">
         <div className="space-y-3">
@@ -160,6 +127,7 @@ export const RoutePlanner: React.FC = () => {
               </>
             )}
           </div>
+          {isOps && (
           <div className="bg-white border border-slate-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-slate-100 flex items-center gap-2"><Ban className="w-4 h-4 text-red-600" /> What-if blocks ({whatIf.length})</h3>
@@ -173,14 +141,17 @@ export const RoutePlanner: React.FC = () => {
               </div>
             )}
           </div>
+          )}
         </div>
         <div className="bg-white border border-slate-800 rounded-xl overflow-hidden">
-          {roads ? <div ref={mapDiv} key={fromD} className="w-full h-[640px]" /> : <p className="p-6 text-sm text-slate-400">Loading map…</p>}
+          {roads ? <RoadMapView mapKey={fromD} roads={roads} blockedIds={reported} whatIfIds={whatIf} routes={routeLines} markers={markers}
+                                onRoadClick={isOps ? toggleWhatIf : undefined} height="h-[640px]" />
+                 : <p className="p-6 text-sm text-slate-400">Loading map…</p>}
           <div className="flex flex-wrap gap-4 px-4 py-2 text-xs text-slate-300 border-t border-slate-800">
             <span className="flex items-center gap-1"><span className="inline-block w-5 h-1 bg-[#138808]" /> Route</span>
             <span className="flex items-center gap-1"><span className="inline-block w-5 h-1 bg-[#e07b13]" /> Detour</span>
             <span className="flex items-center gap-1"><span className="inline-block w-5 h-1 bg-[#c62828]" /> Reported blocked</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-5 h-1 border-t-2 border-dashed border-[#c62828]" /> What-if block</span>
+            {isOps && <span className="flex items-center gap-1"><span className="inline-block w-5 h-1 border-t-2 border-dashed border-[#c62828]" /> What-if block</span>}
           </div>
         </div>
       </div>
