@@ -8,9 +8,9 @@ import { BrandMark } from '../../components/gov/BrandMark';
 const NAV = [
   { to: '/ops', label: 'Connectivity', icon: Network, end: true },
   { to: '/ops/routes', label: 'Route Planner', icon: Route },
+  { to: '/ops/incidents', label: 'Field Incidents', icon: FileWarning },
 ];
 const NEXT = [
-  { label: 'Field Incidents', icon: FileWarning },
   { label: 'Shipments & Vehicles', icon: Truck },
 ];
 
@@ -23,10 +23,10 @@ export const OpsLayout: React.FC = () => {
     <div className="flex-1 flex flex-col bg-gov-page">
       <header className="sticky top-0 z-[1500]">
         <div className="flex h-1"><div className="flex-1 bg-gov-saffron" /><div className="flex-1 bg-white" /><div className="flex-1 bg-gov-green" /></div>
-        <div className="h-16 px-4 sm:px-6 flex items-center justify-between bg-gov-navy text-white">
+        <div className="min-h-16 py-2 px-4 sm:px-6 flex items-center justify-between gap-3 bg-gov-navy text-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded bg-white flex items-center justify-center"><BrandMark size={32} /></div>
-            <div><div className="font-semibold">Setu</div><div className="text-xs text-white/70">Operations Dashboard · North Eastern Region</div></div>
+            <div><div className="font-semibold">Setu</div><div className="text-xs text-white/70 hidden sm:block">Operations Dashboard · North Eastern Region</div></div>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="hidden sm:inline text-white/70">{user?.username}</span>
