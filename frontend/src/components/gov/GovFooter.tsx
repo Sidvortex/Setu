@@ -14,7 +14,7 @@ export const GovFooter: React.FC = () => (
         <div className="flex items-center gap-3 mb-3">
           <BrandMark size={44} />
           <div>
-            <div className="font-bold text-lg">सम्पर्क NE | Setu</div>
+            <div className="font-bold text-lg">सेतु | Setu</div>
             <div className="text-xs text-white/70">Road Accessibility & Supply Logistics</div>
           </div>
         </div>
@@ -26,6 +26,7 @@ export const GovFooter: React.FC = () => (
       <div>
         <h3 className="font-semibold mb-2 text-gov-saffron">Services</h3>
         <Link to="/road-status" className={col}>Live road status</Link>
+        <Link to="/route" className={col}>Check a route</Link>
         <Link to="/#helplines" className={col}>Emergency helplines</Link>
         <Link to="/login" className={col}>Officials login</Link>
       </div>
