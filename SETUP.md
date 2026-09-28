@@ -1,5 +1,10 @@
 # Setu — setup
 
+> The project was renamed from Sampark NE to **Setu**. If your GitHub repo is
+> still called `SamparkNE`, rename it: repo **Settings → General → Repository
+> name → `Setu`**. GitHub redirects the old URL, so existing clones keep working
+> (`git remote set-url origin https://github.com/Sidvortex/Setu.git` to tidy up).
+
 ## Backend
 
 ```bash
@@ -46,6 +51,8 @@ Vercel. Two things specific to this project:
   SQLite file is wiped on every restart.
 - Set `BHOOSURAKSHA_API_URL` to BhooSuraksha's deployed backend URL.
 - Set `AUTH_SECRET` to a long random string.
+- Incident photos go to `backend/data/uploads/`, which Cloud Run wipes on
+  restart. Fine for a demo; for real use, store them in object storage.
 
 ## Updating the road network
 
@@ -57,3 +64,11 @@ existing road blockages first (they reference edge ids).
 
 Memory: the backend needs ~270 MB for the full region, within Cloud Run's
 default 512 MB.
+
+## Field Incidents on a phone
+
+Open the site on the phone, log in, go to **Field Incidents → Report**. The
+browser asks for location permission (needed for GPS) — on most phones this
+only works over **https** (Vercel gives you that) or on `localhost`. Photos are
+shrunk in the browser before upload (max 1280 px). Without a connection,
+reports queue on the device and send automatically when it's back online.
