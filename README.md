@@ -9,16 +9,24 @@ Setu answers one question for district officials and supply planners:
 
 ## What works now — all 8 North Eastern states
 
-- **Regional Connectivity dashboard** (officials): KPIs for the whole region;
-  pick any of the 98 districts to see its roads; click a road to mark it
-  blocked (with a reason) or reopen it. Shows rural population, villages and
-  health facilities cut off from the regional road network, broken down by
-  district, plus today's landslide risk for the district (from BhooSuraksha).
-- **Route Planner** (officials): fastest route between any two places in the
-  region, across districts and states, starting from the roads currently
-  reported blocked; add what-if blockages to see the detour or "Cut off".
-- **Public site**: live road status for every district, a "Road Alerts" ticker,
-  emergency helplines. Government-portal layout, English/हिंदी, accessibility tools.
+- **Regional Connectivity dashboard** (officials): region-wide KPIs; pick any of
+  98 districts; click a road to mark it blocked (with a reason) or reopen it.
+  Shows rural population, villages and health facilities cut off from the
+  regional road network, by district, plus today's landslide risk for the
+  district (from BhooSuraksha).
+- **Field Incidents** (officials / field staff): report a road problem from a
+  phone with GPS, a photo and a description. Works **offline**: reports are
+  saved on the device and sent automatically when the connection returns
+  (never duplicated). Each report snaps to the nearest mapped road; a reviewer
+  verifies it — optionally **blocking the road in one step** — or rejects it.
+- **Route Planner** — for officials (with what-if blockages and cut-off
+  impact) and for the **public** ("Check a Route": routes that avoid reported
+  blockages). Fastest route anywhere in the region, across districts and states.
+- **Maps**: every map has **2D / 3D terrain** and three styles — **Standard,
+  Terrain, Dark** (Google-Maps-style). 3D uses real elevation data with
+  hillshading and 3D buildings; all sources free, no API key.
+- **Public site**: live road status per district, route checker, "Road Alerts"
+  ticker, helplines. Government-portal layout, English/हिंदी, accessibility tools.
 
 **The network:** 1,80,218 km of roads, 98 districts, 65,189 villages
 (4.09 crore rural residents), from PMGSY GeoSadak. The raw data is 53,299
@@ -43,6 +51,7 @@ frontend/   React + TypeScript + Vite + Tailwind + Leaflet
 backend/    FastAPI
   logistics.py     road network, routing, cut-off impact
   road_status.py   shared road status (blocked / reopened) + connectivity summary
+  incidents.py     field incident reports (GPS + photo), verify / reject
   risk_client.py   landslide risk from BhooSuraksha (sister project) over HTTP
   auth.py, db.py   officials' login; storage (local SQLite or Turso)
   data/networks/ner/          routable NER road network (from BhooSuraksha's data-pipeline)
@@ -58,15 +67,16 @@ and a route or impact query takes well under a second.
 | | Setu (this repo) | BhooSuraksha |
 |---|---|---|
 | Purpose | Logistics & road accessibility | Landslide early warning |
-| Repo | github.com/Sidvortex/SamparkNE | github.com/Sidvortex/BhooSuraksha |
+| Repo | github.com/Sidvortex/Setu | github.com/Sidvortex/BhooSuraksha |
 | Link | calls BhooSuraksha's `/api/predict/region` for today's risk | serves risk predictions |
 
 Setu keeps working if BhooSuraksha is down; the risk panel simply hides.
 
 ## Honest limits
 
-- Road blockages are entered by officials; field incident reports and GPS
-  vehicle tracking are the next builds (shown as "Coming next" in the dashboard).
+- GPS vehicle and shipment tracking is the next build (shown as "Coming next").
+- Incident photos are stored on the backend's disk; on Cloud Run that isn't
+  persistent — move them to object storage (e.g. Supabase Storage) to deploy.
 - Travel times use assumed hill-road speeds (NH 35, SH 30 … village road 15,
   track 8 km/h), applied everywhere — slow for plains highways. Measured
   speeds from vehicle tracking will replace them.
