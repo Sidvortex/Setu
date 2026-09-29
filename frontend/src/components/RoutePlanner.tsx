@@ -7,35 +7,12 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Route, Ban, RotateCcw, AlertTriangle, CheckCircle2, Clock, Loader2, Unlink } from 'lucide-react';
-import { DistrictPicker } from './DistrictPicker';
+import { PlaceChooser, Endpoint } from './PlaceChooser';
 import { RoadMapView } from './map/RoadMapView';
 import { MapMarker, RouteLine } from './map/mapTypes';
 import {
-  logisticsApi, roadsApi, District, ImpactResult, LatLon, Place, RoadFeatures, RouteResult, DEFAULT_DISTRICT_ID,
+  logisticsApi, roadsApi, loadRoads, District, ImpactResult, LatLon, Place, RoadFeatures, RouteResult, DEFAULT_DISTRICT_ID, REGION_ID,
 } from '../services/logistics';
-
-interface Endpoint extends LatLon { label: string }
-
-const PlaceChooser: React.FC<{
-  title: string; districts: District[]; districtId: number; onDistrict: (id: number) => void;
-  places: { villages: Place[]; facilities: Place[] } | null; value: Endpoint | null; onPick: (e: Endpoint) => void;
-}> = ({ title, districts, districtId, onDistrict, places, value, onPick }) => (
-  <div className="space-y-2">
-    <p className="text-sm font-semibold text-gov-navy">{title}</p>
-    <DistrictPicker districts={districts} value={districtId} onChange={onDistrict} />
-    <select className="w-full bg-white border border-slate-700 rounded-lg p-2 text-sm text-slate-100" value=""
-      onChange={(e) => {
-        const [kind, id] = e.target.value.split(':');
-        const p = (kind === 'f' ? places?.facilities : places?.villages)?.find((x) => String(x.id) === id);
-        if (p) onPick({ lat: p.lat, lon: p.lon, label: p.name + (p.population ? ` (pop. ${p.population})` : '') });
-      }}>
-      <option value="" disabled>{value ? value.label : 'Choose a place…'}</option>
-      <optgroup label="Health facilities">{places?.facilities.filter((f) => f.health).map((f) => <option key={`f${f.id}`} value={`f:${f.id}`}>{f.name}</option>)}</optgroup>
-      <optgroup label="Largest villages">{places?.villages.map((v) => <option key={`v${v.id}`} value={`v:${v.id}`}>{v.name} — {v.population}</option>)}</optgroup>
-      <optgroup label="Markets, schools, transport">{places?.facilities.filter((f) => !f.health).slice(0, 80).map((f) => <option key={`o${f.id}`} value={`f:${f.id}`}>{f.name}</option>)}</optgroup>
-    </select>
-  </div>
-);
 
 export const RoutePlanner: React.FC<{ mode?: 'ops' | 'public' }> = ({ mode = 'ops' }) => {
   const isOps = mode === 'ops';
@@ -46,6 +23,7 @@ export const RoutePlanner: React.FC<{ mode?: 'ops' | 'public' }> = ({ mode = 'op
   const [fromPlaces, setFromPlaces] = useState<{ villages: Place[]; facilities: Place[] } | null>(null);
   const [toPlaces, setToPlaces] = useState<{ villages: Place[]; facilities: Place[] } | null>(null);
   const [roads, setRoads] = useState<RoadFeatures | null>(null);
+  const [mapScope, setMapScope] = useState<'region' | 'district'>('region');
   const [origin, setOrigin] = useState<Endpoint | null>(null);
   const [destination, setDestination] = useState<Endpoint | null>(null);
   const [reported, setReported] = useState<number[]>([]);
@@ -60,7 +38,11 @@ export const RoutePlanner: React.FC<{ mode?: 'ops' | 'public' }> = ({ mode = 'op
     logisticsApi.region().then((r) => setDistricts(r.districts)).catch((e) => setError(e.message));
     roadsApi.blocked().then((r) => setReported(r.blocked.map((b) => b.edge_id))).catch(() => {});
   }, []);
-  useEffect(() => { logisticsApi.places(fromD).then(setFromPlaces).catch(() => {}); logisticsApi.network(fromD).then((r) => setRoads(r.roads)).catch(() => {}); }, [fromD]);
+  useEffect(() => { logisticsApi.places(fromD).then(setFromPlaces).catch(() => {}); }, [fromD]);
+  const mapDistrict = mapScope === 'region' ? REGION_ID : fromD;
+  useEffect(() => {
+    loadRoads(mapDistrict, mapDistrict === REGION_ID ? [...reported, ...whatIf] : []).then(setRoads).catch(() => {});
+  }, [mapDistrict, reported.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { logisticsApi.places(toD).then(setToPlaces).catch(() => {}); }, [toD]);
 
   useEffect(() => {
@@ -144,7 +126,13 @@ export const RoutePlanner: React.FC<{ mode?: 'ops' | 'public' }> = ({ mode = 'op
           )}
         </div>
         <div className="bg-white border border-slate-800 rounded-xl overflow-hidden">
-          {roads ? <RoadMapView mapKey={fromD} roads={roads} blockedIds={reported} whatIfIds={whatIf} routes={routeLines} markers={markers}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 text-xs">
+            <span className="text-slate-400">Map:</span>
+            {([['region', 'Whole region (major roads)'], ['district', 'Start district (all roads)']] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setMapScope(k)} className={`px-2.5 py-1 rounded-lg cursor-pointer ${mapScope === k ? 'bg-gov-navy text-white' : 'bg-white border border-slate-700 text-slate-300'}`}>{l}</button>
+            ))}
+          </div>
+          {roads ? <RoadMapView mapKey={mapDistrict} roads={roads} blockedIds={reported} whatIfIds={whatIf} routes={routeLines} markers={markers}
                                 onRoadClick={isOps ? toggleWhatIf : undefined} height="h-[640px]" />
                  : <p className="p-6 text-sm text-slate-400">Loading map…</p>}
           <div className="flex flex-wrap gap-4 px-4 py-2 text-xs text-slate-300 border-t border-slate-800">
