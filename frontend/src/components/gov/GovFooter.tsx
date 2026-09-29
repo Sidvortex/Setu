@@ -27,6 +27,7 @@ export const GovFooter: React.FC = () => (
         <h3 className="font-semibold mb-2 text-gov-saffron">Services</h3>
         <Link to="/road-status" className={col}>Live road status</Link>
         <Link to="/route" className={col}>Check a route</Link>
+        <Link to="/report" className={col}>Report a road problem</Link>
         <Link to="/#helplines" className={col}>Emergency helplines</Link>
         <Link to="/login" className={col}>Officials login</Link>
       </div>
