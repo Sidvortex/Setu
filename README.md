@@ -9,24 +9,32 @@ Setu answers one question for district officials and supply planners:
 
 ## What works now — all 8 North Eastern states
 
-- **Regional Connectivity dashboard** (officials): region-wide KPIs; pick any of
-  98 districts; click a road to mark it blocked (with a reason) or reopen it.
-  Shows rural population, villages and health facilities cut off from the
-  regional road network, by district, plus today's landslide risk for the
-  district (from BhooSuraksha).
-- **Field Incidents** (officials / field staff): report a road problem from a
-  phone with GPS, a photo and a description. Works **offline**: reports are
-  saved on the device and sent automatically when the connection returns
-  (never duplicated). Each report snaps to the nearest mapped road; a reviewer
-  verifies it — optionally **blocking the road in one step** — or rejects it.
-- **Route Planner** — for officials (with what-if blockages and cut-off
-  impact) and for the **public** ("Check a Route": routes that avoid reported
-  blockages). Fastest route anywhere in the region, across districts and states.
-- **Maps**: every map has **2D / 3D terrain** and three styles — **Standard,
-  Terrain, Dark** (Google-Maps-style). 3D uses real elevation data with
-  hillshading and 3D buildings; all sources free, no API key.
-- **Public site**: live road status per district, route checker, "Road Alerts"
-  ticker, helplines. Government-portal layout, English/हिंदी, accessibility tools.
+**For officials** (login):
+- **Regional Connectivity** — KPIs for the whole region; a whole-North-East map
+  (all National, State and District roads) or any of 98 districts (every road);
+  click a road to mark it blocked or reopen it; rural population, villages and
+  health facilities cut off, by district; landslide risk from BhooSuraksha.
+- **Route Planner** — fastest route anywhere in the region, with what-if
+  blockages and who they would cut off.
+- **Field Incidents** — report with GPS + photo (works offline); a **review
+  queue** of official and public reports, each with a **credibility score and
+  its reasons** (rule checks + optional AI photo check); verify — optionally
+  blocking the road in one step — or reject.
+- **Shipments & Vehicles** — create a shipment (commodity, quantity, priority,
+  origin → destination, vehicle, driver); Setu plans the route; the driver gets
+  a **private tracking link** (no app, no login) that shares their GPS. Live
+  ETA, delay, and automatic alerts: **cut off**, **rerouted**, **delayed**,
+  **no signal** — for the official *and* the driver.
+
+**For everyone** (no login):
+- **Road Status** — live map for the whole region or any district.
+- **Check a Route** — fastest route that avoids reported blockages.
+- **Report a Problem** — photo + GPS, works offline; rate-limited; nothing is
+  closed without an official's review.
+
+**Maps everywhere:** 2D / 3D terrain, Standard / Terrain / Dark styles, all free
+with no API key. Government-portal layout, English/हिंदी (navigation only for
+now), accessibility tools.
 
 **The network:** 1,80,218 km of roads, 98 districts, 65,189 villages
 (4.09 crore rural residents), from PMGSY GeoSadak. The raw data is 53,299
@@ -51,7 +59,9 @@ frontend/   React + TypeScript + Vite + Tailwind + Leaflet
 backend/    FastAPI
   logistics.py     road network, routing, cut-off impact
   road_status.py   shared road status (blocked / reopened) + connectivity summary
-  incidents.py     field incident reports (GPS + photo), verify / reject
+  incidents.py     field incident reports (GPS + photo), public + official, verify / reject
+  credibility.py   credibility score for reports: rule checks + optional AI photo check
+  shipments.py     shipments, driver tracking links, live ETA / delay / alerts
   risk_client.py   landslide risk from BhooSuraksha (sister project) over HTTP
   auth.py, db.py   officials' login; storage (local SQLite or Turso)
   data/networks/ner/          routable NER road network (from BhooSuraksha's data-pipeline)
@@ -74,7 +84,12 @@ Setu keeps working if BhooSuraksha is down; the risk panel simply hides.
 
 ## Honest limits
 
-- GPS vehicle and shipment tracking is the next build (shown as "Coming next").
+- The AI photo check was tested against simulated Gemini / Claude servers
+  (real request and response formats), not the live APIs. Check it once with a
+  real key; if the default model name has changed, set `AI_MODEL`.
+- Hindi translation covers navigation and headings only so far.
+- The demo slider on shipments moves a vehicle along its route artificially;
+  shipments moved this way are labelled "demo".
 - Incident photos are stored on the backend's disk; on Cloud Run that isn't
   persistent — move them to object storage (e.g. Supabase Storage) to deploy.
 - Travel times use assumed hill-road speeds (NH 35, SH 30 … village road 15,
