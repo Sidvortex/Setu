@@ -38,10 +38,19 @@ npm install
 npm run dev
 ```
 
-Open the printed URL → **Officials Login** → set Backend URL to
-`http://localhost:8100` → sign in. You land on the Connectivity dashboard.
+Open the printed URL. In development the site talks to `http://localhost:8100`
+automatically (the Officials Login page also lets you override the address).
+Sign in → you land on the Connectivity dashboard.
 
 ## Deploying
+
+**Frontend: set `VITE_BACKEND_URL`** (Vercel → Project → Settings →
+Environment Variables) to the backend's URL, e.g.
+`https://setu-backend-xxxxx.a.run.app`, then redeploy. Without it the public
+site, "Report a Problem" and drivers' tracking links can't reach the backend
+(public visitors never see the login page where the address can be typed).
+See `frontend/.env.example`.
+
 
 Same as BhooSuraksha (see its SETUP.md §7): backend to Cloud Run, frontend to
 Vercel. Two things specific to this project:
@@ -72,3 +81,27 @@ browser asks for location permission (needed for GPS) — on most phones this
 only works over **https** (Vercel gives you that) or on `localhost`. Photos are
 shrunk in the browser before upload (max 1280 px). Without a connection,
 reports queue on the device and send automatically when it's back online.
+
+## AI photo check for reports (optional)
+
+Every report gets rule-based credibility checks with no setup. To add the AI
+photo check, set on the backend:
+
+```bash
+AI_PROVIDER=gemini   GEMINI_API_KEY=<key from https://aistudio.google.com>   # free tier, no billing needed
+# or
+AI_PROVIDER=anthropic ANTHROPIC_API_KEY=<key>
+AI_MODEL=<optional: override the default model name>
+```
+
+It runs in the background after each report with a photo and adjusts the
+score, with its reasons shown to the reviewer. If the AI is unreachable or out
+of quota, reports still work; the reviewer sees "AI check unavailable".
+
+## Driver tracking links
+
+"Copy driver tracking link" on a shipment gives a private URL
+(`https://<your-site>/track/<token>`). Send it to the driver by SMS or
+WhatsApp; they open it and tap **Start sharing location**. Browsers only share
+GPS on **https** pages, so this works on the Vercel deployment (or localhost),
+not over a plain-http local network address.
