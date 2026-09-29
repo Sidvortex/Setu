@@ -9,6 +9,8 @@ data-pipeline/build_region_network.py from PMGSY GeoSadak (8 states,
 Endpoints (under /api/logistics):
   GET  /region                 region report + every district (for selectors / overview)
   GET  /network?district=ID    that district's roads as GeoJSON (the browser never loads the whole region)
+  GET  /region-map             major roads (NH/SH/MDR) of all 8 states, simplified, plus any
+                               edges passed in ?include= (e.g. blocked village roads)
   GET  /places?district=ID     its villages (by population) and facilities
   POST /route                  fastest route, anywhere in NER; compares normal vs with blocked roads
   POST /impact                 who loses access when roads are blocked (see below)
@@ -29,7 +31,7 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel
 from pyproj import Transformer
 from scipy.sparse import coo_matrix
@@ -132,14 +134,51 @@ def region():
 @lru_cache(maxsize=128)
 def _district_geojson(district_id: int) -> dict:
     rows = EDGES[EDGES.district_id == district_id]
-    feats = [{
-        "type": "Feature",
-        "geometry": {"type": "LineString", "coordinates": edge_coords(int(r.edge_id))},
-        "properties": {"edge_id": int(r.edge_id), "category": r.category, "road_name": r.road_name,
-                       "length_m": float(r.length_m), "travel_min": float(r.travel_min),
-                       "in_main_network": bool(_BASE_LABELS[r.u] == MAIN_LABEL)},
-    } for r in rows.itertuples()]
-    return {"type": "FeatureCollection", "features": feats}
+    return {"type": "FeatureCollection", "features": [_feature(r, edge_coords(int(r.edge_id))) for r in rows.itertuples()]}
+
+
+REGION_CATEGORIES = ("NH", "SH", "MDR")
+
+
+def _decimated(edge_id: int, step: float = 0.003) -> list:
+    """Coarser shape for the whole-region view: keep points ~300 m apart (plus both ends)."""
+    c = GEOM_COORDS[GEOM_OFFSETS[edge_id]:GEOM_OFFSETS[edge_id + 1]]
+    out = [c[0]]
+    for p in c[1:-1]:
+        if abs(p[0] - out[-1][0]) + abs(p[1] - out[-1][1]) >= step:
+            out.append(p)
+    out.append(c[-1])
+    return [[round(float(x), 4), round(float(y), 4)] for x, y in out]
+
+
+def _feature(r, coords) -> dict:
+    return {"type": "Feature", "geometry": {"type": "LineString", "coordinates": coords},
+            "properties": {"edge_id": int(r.edge_id), "category": r.category, "road_name": r.road_name,
+                           "length_m": float(r.length_m), "travel_min": float(r.travel_min),
+                           "in_main_network": bool(_BASE_LABELS[r.u] == MAIN_LABEL)}}
+
+
+@lru_cache(maxsize=1)
+def _region_features() -> tuple:
+    rows = EDGES[EDGES.category.isin(REGION_CATEGORIES)]
+    return tuple(_feature(r, _decimated(int(r.edge_id))) for r in rows.itertuples())
+
+
+@lru_cache(maxsize=1)
+def _region_features_json() -> str:
+    return ",".join(json.dumps(f, separators=(",", ":")) for f in _region_features())
+
+
+@router.get("/region-map")
+def region_map(include: str = ""):
+    # Pre-serialised: re-encoding ~50,000 features per request took ~2 s
+    extra = {int(x) for x in include.split(",") if x.strip().isdigit() and int(x) < len(EDGES)}
+    extra -= set(EDGES.index[EDGES.category.isin(REGION_CATEGORIES)].intersection(list(extra)))
+    extra_json = "".join("," + json.dumps(_feature(r, edge_coords(int(r.edge_id))), separators=(",", ":"))
+                         for r in EDGES.iloc[sorted(extra)].itertuples()) if extra else ""
+    district = json.dumps({"district_id": 0, "name": "All North East (major roads)", "state": "All North East"})
+    body = f'{{"district":{district},"roads":{{"type":"FeatureCollection","features":[{_region_features_json()}{extra_json}]}}}}'
+    return Response(content=body, media_type="application/json")
 
 
 @router.get("/network")

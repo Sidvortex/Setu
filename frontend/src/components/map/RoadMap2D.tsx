@@ -24,7 +24,8 @@ export const RoadMap2D: React.FC<RoadMapProps & { visible?: boolean }> = ({
 
   useEffect(() => {
     if (!div.current) return;
-    const m = L.map(div.current);
+    // Canvas, not SVG: the whole-region view draws ~50,000 roads
+    const m = L.map(div.current, { preferCanvas: true });
     const layer = L.geoJSON(roads, {
       onEachFeature: (f, l) => {
         l.bindTooltip(`${f.properties.road_name || 'Unnamed road'} · ${f.properties.category} · ${(f.properties.length_m / 1000).toFixed(1)} km`, { sticky: true });
@@ -49,16 +50,17 @@ export const RoadMap2D: React.FC<RoadMapProps & { visible?: boolean }> = ({
     m.getContainer().classList.toggle('map-dark', mapStyle === 'dark');
   }, [mapStyle, roads]);
 
-  // Road colours by status
+  // Road colours by status (thinner lines on the whole-region view, where thousands of roads meet)
   useEffect(() => {
     const dark = mapStyle === 'dark';
+    const thin = roads.features.length > 5000 ? 0.45 : 1;
     roadLayer.current?.eachLayer((layer) => {
       const l = layer as RoadLayer; const p = l.feature?.properties; if (!p) return;
       if (blockedIds.includes(p.edge_id)) { l.setStyle({ color: '#e53935', weight: 7, opacity: 1, dashArray: undefined }); l.bringToFront(); return; }
       if (whatIfIds.includes(p.edge_id)) { l.setStyle({ color: '#e53935', weight: 6, opacity: 1, dashArray: '6 6' }); l.bringToFront(); return; }
       if (p.edge_id === selectedId) { l.setStyle({ color: '#f28c28', weight: 7, opacity: 1, dashArray: undefined }); l.bringToFront(); return; }
       const s = (dark ? DARK_ROAD_COLORS : ROAD_COLORS)[p.category] ?? (p.in_main_network ? (dark ? DARK_OTHER_ROAD : OTHER_ROAD) : DISCONNECTED_ROAD);
-      l.setStyle({ color: s.color, weight: s.width, opacity: 0.9, dashArray: undefined });
+      l.setStyle({ color: s.color, weight: s.width * thin, opacity: 0.9, dashArray: undefined });
     });
   }, [blockedIds, whatIfIds, selectedId, mapStyle, roads]);
 

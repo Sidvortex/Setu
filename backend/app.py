@@ -6,6 +6,7 @@ Setu backend: road accessibility & supply logistics for the North East.
   /api/roads/...          shared road status: blocked / reopened (road_status.py)
   /api/connectivity/...   district connectivity summary (road_status.py)
   /api/incidents/...      field incident reports with GPS + photo (incidents.py)
+  /api/shipments, /api/track/...  shipments, driver tracking links, live ETA + alerts (shipments.py)
 
 Landslide risk comes from the sister project BhooSuraksha over HTTP
 (risk_client.py, BHOOSURAKSHA_API_URL).
@@ -14,6 +15,7 @@ Run:  uvicorn app:app --reload --port 8100
 """
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 
 import auth
@@ -21,12 +23,15 @@ import incidents
 import logistics
 import risk_client
 import road_status
+import shipments
 
 app = FastAPI(title="Setu API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # road GeoJSON compresses ~4x
 app.include_router(logistics.router)
 app.include_router(road_status.router)
 app.include_router(incidents.router)
+app.include_router(shipments.router)
 
 
 class LoginRequest(BaseModel):

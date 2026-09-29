@@ -9,9 +9,7 @@ const NAV = [
   { to: '/ops', label: 'Connectivity', icon: Network, end: true },
   { to: '/ops/routes', label: 'Route Planner', icon: Route },
   { to: '/ops/incidents', label: 'Field Incidents', icon: FileWarning },
-];
-const NEXT = [
-  { label: 'Shipments & Vehicles', icon: Truck },
+  { to: '/ops/shipments', label: 'Shipments & Vehicles', icon: Truck },
 ];
 
 export const OpsLayout: React.FC = () => {
@@ -44,12 +42,6 @@ export const OpsLayout: React.FC = () => {
               </NavLink>
             ))}
           </nav>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-6 mb-2 px-3">Coming next</p>
-          {NEXT.map(({ label, icon: Icon }) => (
-            <div key={label} className="flex items-center gap-3 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" title="Planned for the next build">
-              <Icon className="w-4 h-4" /> {label}
-            </div>
-          ))}
         </aside>
         <main id="main-content" className="flex-1 min-w-0 p-4 sm:p-5">
           <nav className="md:hidden flex gap-2 mb-3">

@@ -76,7 +76,11 @@ export const RoadMap3D: React.FC<RoadMapProps & { visible?: boolean }> = ({
       pitch: 55, maxPitch: 85, canvasContextAttributes: { antialias: true }, attributionControl: { compact: true },
     });
     m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-    m.on('error', (e) => { if (!m.isStyleLoaded() && !(e as unknown as { sourceId?: string }).sourceId) setFailed(true); });
+    // Failure = the base style never loads. (Not "any error": isStyleLoaded() is also false
+    // while tiles download, so one failed tile or font used to cover a working map.)
+    let styleEverLoaded = false;
+    const giveUp = setTimeout(() => { if (!styleEverLoaded) setFailed(true); }, 20000);
+    m.once('style.load', () => { styleEverLoaded = true; clearTimeout(giveUp); setFailed(false); });
     // 'style.load', not 'load': 'load' waits for every tile, so one stalled tile
     // on a slow connection would keep the terrain and roads from ever appearing.
     m.on('style.load', () => {
@@ -88,7 +92,8 @@ export const RoadMap3D: React.FC<RoadMapProps & { visible?: boolean }> = ({
       m.addSource('setu-roads', { type: 'geojson', data: EMPTY });
       m.addSource('setu-routes', { type: 'geojson', data: EMPTY });
       m.addSource('setu-points', { type: 'geojson', data: EMPTY });
-      m.addLayer({ id: 'roads-normal', type: 'line', source: 'setu-roads', filter: ['==', ['get', 'status'], 'normal'], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': 0.9 } });
+      m.addLayer({ id: 'roads-normal', type: 'line', source: 'setu-roads', filter: ['==', ['get', 'status'], 'normal'], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], // zoom must be the outermost input of the expression (MapLibre rejects the layer otherwise)
+        'line-width': ['interpolate', ['linear'], ['zoom'], 6, ['*', ['get', 'width'], 0.35], 10, ['get', 'width']], 'line-opacity': 0.9 } });
       m.addLayer({ id: 'roads-selected', type: 'line', source: 'setu-roads', filter: ['==', ['get', 'status'], 'selected'], paint: { 'line-color': '#f28c28', 'line-width': 7 } });
       m.addLayer({ id: 'roads-whatif', type: 'line', source: 'setu-roads', filter: ['==', ['get', 'status'], 'whatif'], paint: { 'line-color': '#e53935', 'line-width': 6, 'line-dasharray': [2, 2] } });
       m.addLayer({ id: 'roads-blocked', type: 'line', source: 'setu-roads', filter: ['==', ['get', 'status'], 'blocked'], paint: { 'line-color': '#e53935', 'line-width': 7 } });
@@ -109,7 +114,7 @@ export const RoadMap3D: React.FC<RoadMapProps & { visible?: boolean }> = ({
     m.on('click', 'roads-hit', (e) => { const id = e.features?.[0]?.properties?.edge_id; if (id !== undefined) clickRef.current?.(Number(id)); });
     map.current = m;
     if (import.meta.env.DEV) (window as unknown as { __roadMap3d?: maplibregl.Map }).__roadMap3d = m; // debugging aid in dev only
-    return () => { m.remove(); map.current = null; };
+    return () => { clearTimeout(giveUp); m.remove(); map.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // New district: fit to its roads (data itself flows through roadData below)
@@ -144,7 +149,9 @@ export const RoadMap3D: React.FC<RoadMapProps & { visible?: boolean }> = ({
     // Hidden with visibility, never display:none: shrinking the canvas to 0x0
     // made MapLibre reallocate its terrain buffers, which was very slow.
     <div className={`absolute inset-0 ${height}`} style={{ visibility: visible ? 'visible' : 'hidden', pointerEvents: visible ? 'auto' : 'none' }}>
-      <div ref={div} className="absolute inset-0" />
+      {/* MapLibre forces position:relative on its container (its CSS beats Tailwind's layered
+          utilities), so the container must size itself with w-full h-full, not absolute+inset. */}
+      <div ref={div} className="w-full h-full" />
       {failed && (
         <div className="absolute inset-0 flex items-center justify-center bg-gov-page/90 text-sm text-slate-300 p-4 text-center">
           Couldn't load the 3D base map. Check your connection, or switch to 2D.
