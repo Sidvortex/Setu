@@ -72,6 +72,7 @@ async function send<T>(method: 'GET' | 'POST' | 'DELETE', path: string, token?: 
 export const logisticsApi = {
   region: () => send<{ report: RegionReport; districts: District[] }>('GET', '/api/logistics/region'),
   network: (district: number) => send<{ district: District; roads: RoadFeatures }>('GET', `/api/logistics/network?district=${district}`),
+  regionMap: (include: number[] = []) => send<{ roads: RoadFeatures }>('GET', `/api/logistics/region-map${include.length ? `?include=${include.join(',')}` : ''}`),
   places: (district: number) => send<{ district: District; villages: Place[]; facilities: Place[] }>('GET', `/api/logistics/places?district=${district}`),
   route: (origin: LatLon, destination: LatLon, blocked: number[]) =>
     send<RouteResult>('POST', '/api/logistics/route', null, { origin, destination, blocked_edge_ids: blocked }),
@@ -86,5 +87,11 @@ export const roadsApi = {
   reopen: (token: string, edge_id: number) => send('DELETE', `/api/roads/blocked/${edge_id}`, token),
 };
 
-/** Dima Hasao (listed as N.C.Hills in GeoSadak): the pilot district, used as the default view. */
+/** Dima Hasao (listed as N.C.Hills in GeoSadak): the pilot district. */
 export const DEFAULT_DISTRICT_ID = 378;
+/** Pseudo-district for the whole-region view: major roads (NH/SH/MDR) of all 8 states. */
+export const REGION_ID = 0;
+
+/** Roads for a district, or for the whole region (plus the given extra edges, e.g. blocked village roads). */
+export const loadRoads = (districtId: number, include: number[] = []) =>
+  (districtId === REGION_ID ? logisticsApi.regionMap(include) : logisticsApi.network(districtId)).then((r) => r.roads);

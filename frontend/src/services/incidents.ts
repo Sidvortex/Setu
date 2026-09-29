@@ -13,6 +13,9 @@ export type IncidentStatus = 'reported' | 'verified' | 'rejected';
 export interface IncidentDraft {
   client_id: string; lat: number; lon: number; incident_type: RoadBlockReason; severity: Severity;
   description?: string; photo_base64?: string; captured_at: string;
+  contact?: string;
+  /** sent through the public endpoint (no login) */
+  public?: boolean;
 }
 
 export interface Incident {
@@ -21,15 +24,23 @@ export interface Incident {
   reported_by: string; captured_at: string | null; created_at: string; status: IncidentStatus;
   reviewed_by: string | null; reviewed_at: string | null;
   road_name: string | null; road_category: string | null; district: string | null; state: string | null;
+  source: 'official' | 'public'; contact: string | null;
+  credibility: number | null; credibility_level: string | null;
+  credibility_reasons: { points: number; reason: string }[];
+  ai_verdict: { summary?: string; provider?: string; error?: string } | null;
 }
+
+export interface PublicReceipt { id: number; status: IncidentStatus; road_name: string | null; district: string | null; snap_m: number | null; duplicate: boolean }
 
 const QUEUE_KEY = 'setu_incident_queue';
 
-async function call<T>(method: 'GET' | 'POST', path: string, token: string, body?: unknown): Promise<T> {
+async function call<T>(method: 'GET' | 'POST', path: string, token: string | null, body?: unknown): Promise<T> {
   const base = getBackendUrl();
   if (!base) throw new Error('No backend URL configured.');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${base}${path}`, {
-    method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    method, headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
@@ -42,8 +53,10 @@ async function call<T>(method: 'GET' | 'POST', path: string, token: string, body
 }
 
 export const incidentsApi = {
-  list: (token: string, status?: IncidentStatus) => call<{ incidents: Incident[] }>('GET', `/api/incidents${status ? `?status=${status}` : ''}`, token),
+  list: (token: string, status?: IncidentStatus, source?: 'public' | 'official') =>
+    call<{ incidents: Incident[]; ai_check: boolean }>('GET', `/api/incidents?${new URLSearchParams({ ...(status ? { status } : {}), ...(source ? { source } : {}) })}`, token),
   submit: (token: string, d: IncidentDraft) => call<Incident & { duplicate: boolean }>('POST', '/api/incidents', token, d),
+  submitPublic: (d: IncidentDraft) => call<PublicReceipt>('POST', '/api/incidents/public', null, d),
   verify: (token: string, id: number, blockRoad: boolean) => call<Incident>('POST', `/api/incidents/${id}/verify`, token, { block_road: blockRoad }),
   reject: (token: string, id: number) => call<Incident>('POST', `/api/incidents/${id}/reject`, token),
   photoUrl: (path: string) => `${getBackendUrl()}${path}`,
@@ -59,16 +72,18 @@ function saveQueue(q: IncidentDraft[]) {
 }
 export function enqueue(d: IncidentDraft) { saveQueue([...queuedReports().filter((x) => x.client_id !== d.client_id), d]); }
 
-/** Try to send everything queued. Network failures keep the report queued; rejected reports (4xx) are dropped and returned. */
-export async function flushQueue(token: string): Promise<{ sent: number; rejected: { draft: IncidentDraft; reason: string }[] }> {
+/** Try to send everything queued. Network failures keep the report queued; rejected reports (4xx) are dropped and returned.
+ *  Public reports go without a login; officials' reports wait until someone is logged in. */
+export async function flushQueue(token: string | null): Promise<{ sent: number; rejected: { draft: IncidentDraft; reason: string }[] }> {
   let sent = 0; const rejected: { draft: IncidentDraft; reason: string }[] = [];
   for (const d of queuedReports()) {
+    if (!d.public && !token) continue;
     try {
-      await incidentsApi.submit(token, d);
+      if (d.public) await incidentsApi.submitPublic(d); else await incidentsApi.submit(token!, d);
       sent++; saveQueue(queuedReports().filter((x) => x.client_id !== d.client_id));
     } catch (e) {
       const status = (e as { status?: number }).status;
-      if (status && status >= 400 && status < 500 && status !== 401) {
+      if (status && status >= 400 && status < 500 && status !== 401 && status !== 429) {
         rejected.push({ draft: d, reason: (e as Error).message });
         saveQueue(queuedReports().filter((x) => x.client_id !== d.client_id));
       } else break; // offline or server trouble: stop, try again later
