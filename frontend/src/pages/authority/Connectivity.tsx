@@ -9,8 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { RoadMapView } from '../../components/map/RoadMapView';
 import { DistrictPicker } from '../../components/DistrictPicker';
 import {
-  logisticsApi, roadsApi, ConnectivitySummary, District, RegionReport, RoadFeatures,
-  ROAD_BLOCK_REASONS, RoadBlockReason, DEFAULT_DISTRICT_ID,
+  logisticsApi, roadsApi, loadRoads, ConnectivitySummary, District, RegionReport, RoadFeatures,
+  ROAD_BLOCK_REASONS, RoadBlockReason, REGION_ID,
 } from '../../services/logistics';
 
 const RISK_TONE: Record<string, string> = {
@@ -22,7 +22,7 @@ export const Connectivity: React.FC = () => {
   const { token } = useAuth();
   const [districts, setDistricts] = useState<District[]>([]);
   const [report, setReport] = useState<RegionReport | null>(null);
-  const [districtId, setDistrictId] = useState(DEFAULT_DISTRICT_ID);
+  const [districtId, setDistrictId] = useState(REGION_ID);
   const [roads, setRoads] = useState<RoadFeatures | null>(null);
   const [s, setS] = useState<ConnectivitySummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -32,18 +32,22 @@ export const Connectivity: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { logisticsApi.region().then((r) => { setDistricts(r.districts); setReport(r.report); }).catch((e) => setErr(e.message)); }, []);
-  const refresh = useCallback(() => roadsApi.summary(districtId).then(setS).catch((e) => setErr(e.message)), [districtId]);
+  const refresh = useCallback(() => roadsApi.summary(districtId || undefined).then(setS).catch((e) => setErr(e.message)), [districtId]);
   useEffect(() => {
     setSelected(null); // roads stay until the new district arrives, so the map stays mounted
-    logisticsApi.network(districtId).then((r) => setRoads(r.roads)).catch((e) => setErr(e.message));
     refresh();
   }, [districtId, refresh]);
+  // Region view also draws blocked village roads, so reload it when the blocked set changes
+  const blockedKey = s?.blocked.map((b) => b.edge_id).join(',') ?? '';
+  useEffect(() => {
+    loadRoads(districtId, districtId === REGION_ID && blockedKey ? blockedKey.split(',').map(Number) : []).then(setRoads).catch((e) => setErr(e.message));
+  }, [districtId, districtId === REGION_ID ? blockedKey : '']); // eslint-disable-line react-hooks/exhaustive-deps
 
   const district = districts.find((d) => d.district_id === districtId);
   const blockedIds = s?.blocked.map((b) => b.edge_id) ?? [];
   const selectedRoad = selected !== null ? roads?.features.find((f) => f.properties.edge_id === selected)?.properties : undefined;
   const selectedIsBlocked = selected !== null && blockedIds.includes(selected);
-  const healthHere = (s?.health_facilities_cut_off ?? []).filter((f) => f.district === district?.name);
+  const healthHere = (s?.health_facilities_cut_off ?? []).filter((f) => districtId === REGION_ID || f.district === district?.name);
 
   const act = async (fn: () => Promise<unknown>) => {
     setSaving(true); setErr(null);
@@ -79,7 +83,7 @@ export const Connectivity: React.FC = () => {
           </div>
         ))}
         <div className="bg-white rounded-xl p-4 border border-slate-800">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400"><Mountain className="w-4 h-4 text-gov-navy" /> Landslide risk · {district?.name ?? '…'}</div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400"><Mountain className="w-4 h-4 text-gov-navy" /> Landslide risk · {district?.name ?? 'pick a district'}</div>
           {s?.landslide_risk ? (
             <>
               <div className="flex items-center gap-2 mt-1">
@@ -88,12 +92,13 @@ export const Connectivity: React.FC = () => {
               </div>
               <div className="text-xs text-slate-400">today, via BhooSuraksha</div>
             </>
-          ) : <div className="text-sm text-slate-400 mt-2">Risk engine not connected</div>}
+          ) : <div className="text-sm text-slate-400 mt-2">{districtId === REGION_ID ? 'Select a district to see its risk' : 'Risk engine not connected'}</div>}
         </div>
       </div>
 
       <div className="bg-white border border-slate-800 rounded-xl p-3 flex flex-wrap items-end justify-between gap-3">
-        {districts.length > 0 && <DistrictPicker districts={districts} value={districtId} onChange={setDistrictId} />}
+        {districts.length > 0 && <DistrictPicker districts={districts} value={districtId} onChange={setDistrictId} allowRegion />}
+        {districtId === REGION_ID && <p className="text-xs text-slate-400">National, State and Major District Roads of all 8 states · pick a district to see village roads</p>}
         {district && (
           <p className="text-xs text-slate-400">
             {district.road_km.toLocaleString('en-IN')} km of roads · {district.villages.toLocaleString('en-IN')} villages · {district.population.toLocaleString('en-IN')} rural population
