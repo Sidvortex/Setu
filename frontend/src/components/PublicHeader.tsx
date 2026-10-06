@@ -16,9 +16,12 @@ interface Item { label: string; to: string; external?: boolean }
 interface Group { label: string; to?: string; items?: Item[] }
 
 const RoadAlertsTicker: React.FC = () => {
-  const [blocked, setBlocked] = useState<BlockedRoad[] | null>(null);
+  // undefined = still loading (the server may be waking up), null = failed
+  const [blocked, setBlocked] = useState<BlockedRoad[] | null | undefined>(undefined);
   useEffect(() => { roadsApi.blocked().then((r) => setBlocked(r.blocked)).catch(() => setBlocked(null)); }, []);
-  const items = blocked === null
+  const items = blocked === undefined
+    ? ['Loading live road status…']
+    : blocked === null
     ? ['Live road status unavailable — check your connection.']
     : blocked.length
       ? blocked.map((b) => `BLOCKED — ${b.road_name} (${b.category}): ${b.reason}${b.note ? `, ${b.note}` : ''}`)

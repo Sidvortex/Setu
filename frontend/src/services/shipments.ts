@@ -1,5 +1,6 @@
 /** Shipments & vehicle tracking client (backend/shipments.py). */
 import { getBackendUrl } from '../utils/backendUrl';
+import { waitForServer } from '../utils/serverWake';
 
 export const COMMODITIES = ['Medicines', 'Food', 'Drinking water', 'Agricultural produce', 'Fuel', 'Construction materials', 'Emergency supplies'] as const;
 export const UNITS = ['kg', 'tonnes', 'litres', 'boxes', 'units'] as const;
@@ -24,6 +25,7 @@ async function call<T>(method: 'GET' | 'POST', path: string, token: string | nul
   if (!base) throw new Error('No backend URL configured.');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
+  await waitForServer(); // free hosting may be asleep: wait for the wake-up ping
   const res = await fetch(`${base}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   if (!res.ok) { const e = await res.json().catch(() => null); throw new Error(e?.detail || `Request failed (${res.status})`); }
   return res.json();

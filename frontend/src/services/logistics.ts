@@ -3,6 +3,7 @@
  * cut-off impact (backend/logistics.py) and shared road status (road_status.py).
  */
 import { getBackendUrl } from '../utils/backendUrl';
+import { waitForServer } from '../utils/serverWake';
 
 export interface LatLon { lat: number; lon: number }
 
@@ -61,6 +62,7 @@ async function send<T>(method: 'GET' | 'POST' | 'DELETE', path: string, token?: 
   if (!base) throw new Error('No backend URL configured. Set it on the Officials Login page.');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
+  await waitForServer(); // free hosting may be asleep: wait for the wake-up ping
   const res = await fetch(`${base}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   if (!res.ok) {
     const err = await res.json().catch(() => null);

@@ -54,42 +54,29 @@ Sign in → you land on the Connectivity dashboard.
 
 ## Deploying
 
-Backend (Cloud Run), production settings:
+Step-by-step guide for both projects (Render free plan for the backends,
+Vercel for the websites, Turso for the databases): **[DEPLOY.md](DEPLOY.md)**.
 
-```bash
-cd backend
-gcloud run deploy setu-backend --source . --region asia-south1 --allow-unauthenticated \
-  --set-env-vars SETU_ENV=production,AUTH_SECRET="<64 random hex chars>",ALLOWED_ORIGINS="https://<your-setu-site>.vercel.app",BHOOSURAKSHA_API_URL="https://<bhoosuraksha-backend>.a.run.app",TURSO_DATABASE_URL="...",TURSO_AUTH_TOKEN="..."
-```
+Things worth knowing:
 
-- With `SETU_ENV=production` the backend **refuses to start** if `AUTH_SECRET` is
-  missing or short — on purpose.
+- `render.yaml` describes the backend service; Render reads it when you create
+  a Blueprint from this repo.
+- With `SETU_ENV=production` (set in render.yaml) the backend **refuses to
+  start** if `AUTH_SECRET` is missing or short — on purpose. Render generates it.
 - Health checks: `/health` (process up) and `/ready` (database + road network
-  loaded; also shows the BhooSuraksha link's status). In Cloud Run you can set
-  `/ready` as the startup probe.
+  loaded; also shows the BhooSuraksha link's status).
 - Every response has a `Server-Timing` header; requests over 1 s are logged as
-  "slow request" in Cloud Run's logs.
-- Python 3.12 is pinned by `backend/.python-version`; dependencies are pinned
-  in `requirements.txt` to the exact versions the tests passed with.
-
-**Frontend: set `VITE_BACKEND_URL`** (Vercel → Project → Settings →
-Environment Variables) to the backend's URL, e.g.
-`https://setu-backend-xxxxx.a.run.app`, then redeploy. Without it the public
-site, "Report a Problem" and drivers' tracking links can't reach the backend
-(public visitors never see the login page where the address can be typed).
-See `frontend/.env.example`.
-
-
-Same as BhooSuraksha (see its SETUP.md §7): backend to Cloud Run, frontend to
-Vercel. Two things specific to this project:
-
-- **Use Turso** (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`). Both logins and the
-  shared road status (`db.py`) live in the database; on Cloud Run a local
-  SQLite file is wiped on every restart.
-- Set `BHOOSURAKSHA_API_URL` to BhooSuraksha's deployed backend URL.
-- Set `AUTH_SECRET` to a long random string.
-- Incident photos go to `backend/data/uploads/`, which Cloud Run wipes on
-  restart. Fine for a demo; for real use, store them in object storage.
+  "slow request" in Render's logs.
+- Python 3.12 is pinned (`PYTHON_VERSION` in render.yaml, `.python-version`);
+  dependencies are pinned in `requirements.txt` to the versions the tests passed with.
+- **Wake-up call**: free Render services sleep after 15 idle minutes. Every page
+  pings `/health` on load (`frontend/src/utils/serverWake.ts`), shows a "waking
+  up the server" notice if that takes over 3 s, and API calls wait for it instead
+  of failing. The backend pings BhooSuraksha's `/health` when it starts, so both
+  wake together. There is deliberately no keep-alive timer (it would burn the
+  free plan's 750 monthly hours).
+- `frontend/vercel.json` sends every path to `index.html`, so links like
+  `/track/<token>` and `/ops` work when opened directly.
 
 ## Updating the road network
 
@@ -99,8 +86,8 @@ re-running it, copy the contents of `data-pipeline/data/processed/ner/` into
 `backend/data/networks/ner/`. Edge ids change on every rebuild, so clear
 existing road blockages first (they reference edge ids).
 
-Memory: the backend needs ~270 MB for the full region, within Cloud Run's
-default 512 MB.
+Memory: the backend uses ~360 MB with the full region loaded (measured on
+Python 3.12), within the Render free plan's 512 MB.
 
 ## Field Incidents on a phone
 

@@ -38,6 +38,10 @@ const DICTIONARY: Record<string, { en: string; hi: string }> = {
   'auth.signIn': { en: 'Sign in', hi: 'साइन इन करें' },
 
   'lang.choose': { en: 'Choose your language', hi: 'अपनी भाषा चुनें' },
+  'wake.waking': { en: 'Waking up the server — free hosting sleeps when idle, so this can take up to a minute.', hi: 'सर्वर चालू हो रहा है — मुफ़्त होस्टिंग खाली रहने पर बंद हो जाती है, इसमें एक मिनट तक लग सकता है।' },
+  'wake.ready': { en: 'Connected.', hi: 'जुड़ गया।' },
+  'wake.down': { en: "Can't reach the server right now. Maps and reports may not load.", hi: 'अभी सर्वर से संपर्क नहीं हो पा रहा। नक्शे और रिपोर्ट लोड नहीं हो सकते।' },
+  'wake.retry': { en: 'Try again', hi: 'फिर से कोशिश करें' },
   'lang.chooseSub': { en: 'You can change this any time from the top bar.', hi: 'आप इसे शीर्ष बार से कभी भी बदल सकते हैं।' },
 };
 

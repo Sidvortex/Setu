@@ -1,0 +1,28 @@
+# Render Blueprint for Setu's backend (free plan).
+# Render -> New -> Blueprint -> pick the Setu repo. It reads this file.
+# The website (frontend/) goes on Vercel, not here.
+services:
+  - type: web
+    name: setu-api
+    runtime: python
+    plan: free
+    region: singapore          # closest Render region to North East India
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11         # what the tests run on; Render's default is newer
+      - key: SETU_ENV
+        value: production      # refuses to start without a strong AUTH_SECRET
+      - key: AUTH_SECRET
+        generateValue: true    # Render makes a random secret; nobody needs to see it
+      - key: TURSO_DATABASE_URL
+        sync: false            # Render asks for these when you create the Blueprint
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: BHOOSURAKSHA_API_URL
+        sync: false            # e.g. https://bhoosuraksha-api.onrender.com
+      - key: ALLOWED_ORIGINS
+        sync: false            # the Setu website's address, e.g. https://setu.vercel.app

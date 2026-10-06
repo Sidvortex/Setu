@@ -3,7 +3,7 @@ Link to BhooSuraksha, the sister project that provides landslide risk.
 
 Setu asks BhooSuraksha's API (POST /api/predict/region) for the current risk
 at a place and shows it as "predicted disruption risk". Configure with
-BHOOSURAKSHA_API_URL (e.g. its Cloud Run URL) and optionally
+BHOOSURAKSHA_API_URL (e.g. its Render URL) and optionally
 BHOOSURAKSHA_TIMEOUT_S (default 4 s).
 
 Designed so BhooSuraksha can never slow Setu down:
@@ -13,6 +13,9 @@ Designed so BhooSuraksha can never slow Setu down:
     for RISK_FAILURE_COOLDOWN_S (default 120 s), so a down or sleeping
     BhooSuraksha costs one timeout, not one per request
   * callers treat None as "unknown" and carry on
+  * wake() pings BhooSuraksha's /health once in the background when Setu
+    starts, so a sleeping free-plan BhooSuraksha is already booting by the
+    time the first risk lookup happens
 """
 import threading
 import time
@@ -85,3 +88,30 @@ def close() -> None:
     if _client is not None:
         _client.close()
         _client = None
+
+
+WAKE_TIMEOUT_S = 90.0  # a free-plan server can take about a minute to boot
+
+
+def _wake_worker(url: str) -> None:
+    global _down_until
+    try:
+        r = httpx.get(f"{url}/health", timeout=WAKE_TIMEOUT_S)
+        r.raise_for_status()
+    except httpx.HTTPError as e:
+        with _lock:
+            _last.update(ok=False, at=time.time(), error=f"wake: {type(e).__name__}: {str(e)[:120]}")
+        return
+    with _lock:
+        _down_until = 0.0  # it's up: let risk lookups through straight away
+        _last.update(ok=True, at=time.time(), error=None)
+
+
+def wake() -> Optional[threading.Thread]:
+    """Fire-and-forget wake-up call to BhooSuraksha. Never blocks startup."""
+    url = settings().bhoosuraksha_api_url
+    if not url:
+        return None
+    t = threading.Thread(target=_wake_worker, args=(url,), name="bhoosuraksha-wake", daemon=True)
+    t.start()
+    return t

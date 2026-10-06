@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { TopUtilityBar } from './TopUtilityBar';
 import { LanguageChooserModal } from './LanguageChooserModal';
 import { GovFooter } from './gov/GovFooter';
+import { ServerWake } from './ServerWake';
 
 export const GlobalChrome: React.FC = () => (
   <>
@@ -12,5 +13,6 @@ export const GlobalChrome: React.FC = () => (
       <GovFooter />
     </div>
     <LanguageChooserModal />
+    <ServerWake />
   </>
 );

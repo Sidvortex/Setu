@@ -92,8 +92,10 @@ Setu keeps working if BhooSuraksha is down; the risk panel simply hides.
 - Hindi translation covers navigation and headings only so far.
 - The demo slider on shipments moves a vehicle along its route artificially;
   shipments moved this way are labelled "demo".
-- Incident photos are stored on the backend's disk; on Cloud Run that isn't
-  persistent — move them to object storage (e.g. Supabase Storage) to deploy.
+- Incident photos are stored in the database (Turso when deployed). Fine for a
+  prototype; for heavy real use, object storage (e.g. Supabase Storage) is cheaper.
+- On Render's free plan the backend sleeps after 15 minutes idle; the first
+  visitor after that waits ~1 minute (the site shows a "waking up" notice).
 - Travel times use assumed hill-road speeds (NH 35, SH 30 … village road 15,
   track 8 km/h), applied everywhere — slow for plains highways. Measured
   speeds from vehicle tracking will replace them.

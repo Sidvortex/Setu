@@ -141,3 +141,55 @@ def test_down_bhoosuraksha_costs_one_timeout_not_many(monkeypatch):
         assert risk_client.status()["cooling_down"] and risk_client.status()["last_ok"] is False
     finally:
         monkeypatch.delenv("BHOOSURAKSHA_API_URL"); settings.cache_clear(); risk_client.close(); risk_client._down_until = 0.0
+
+
+def test_startup_wakes_bhoosuraksha_in_background(monkeypatch):
+    """Setu pings BhooSuraksha's /health on startup without waiting for it (free hosting sleeps)."""
+    import http.server
+    import threading as th
+    hits = []
+    release = th.Event()
+
+    class SlowHealth(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            hits.append(self.path)
+            release.wait(5)                      # pretend to be booting
+            self.send_response(200); self.end_headers(); self.wfile.write(b'{"status":"ok"}')
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), SlowHealth)
+    th.Thread(target=srv.serve_forever, daemon=True).start()
+    monkeypatch.setenv("BHOOSURAKSHA_API_URL", f"http://127.0.0.1:{srv.server_address[1]}")
+    settings.cache_clear()
+    try:
+        risk_client._down_until = time.monotonic() + 999     # pretend an earlier call failed
+        t0 = time.monotonic()
+        t = risk_client.wake()
+        assert time.monotonic() - t0 < 0.5                   # returned immediately
+        for _ in range(50):
+            if hits:
+                break
+            time.sleep(0.05)
+        assert hits == ["/health"]
+        release.set(); t.join(5)
+        assert risk_client._down_until == 0.0                # up again: lookups allowed
+        assert risk_client.status()["last_ok"] is True
+    finally:
+        srv.shutdown()
+        monkeypatch.delenv("BHOOSURAKSHA_API_URL"); settings.cache_clear(); risk_client._down_until = 0.0
+
+
+def test_photo_survives_a_wiped_disk(client, H):
+    """Free hosting erases the server's disk when it sleeps; photos must come back from the database."""
+    import shutil
+    resp = _report(client, "10.4.0.1", photo_base64=_photo((200, 40, 90)))
+    assert resp.status_code == 200, resp.text
+    r = resp.json()
+    inc = next(i for i in client.get("/api/incidents", headers=H).json()["incidents"] if i["id"] == r["id"])
+    first = client.get(inc["photo_url"])
+    assert first.status_code == 200
+    shutil.rmtree(incidents.UPLOADS)                       # what a Render spin-down does
+    again = client.get(inc["photo_url"])
+    assert again.status_code == 200 and again.content == first.content

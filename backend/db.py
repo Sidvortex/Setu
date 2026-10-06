@@ -3,7 +3,7 @@ Shared storage for Setu's operational data (road status, and later
 incidents / shipments). Same pattern as auth.py: Turso when
 TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set, otherwise a local SQLite file
 (data/setu.db). Local SQLite is fine for development but does not persist
-on Cloud Run — use Turso for any deployment.
+on Render's free plan (its disk is wiped when the server sleeps) — use Turso for any deployment.
 """
 import os
 import sqlite3

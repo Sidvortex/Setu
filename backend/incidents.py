@@ -18,9 +18,9 @@ Nothing a member of the public sends can block a road without an official.
 Reports are idempotent on client_id (generated on the device), so a phone
 retrying after a dropped connection never creates duplicates.
 
-Photos are saved under data/uploads/. That's fine locally but NOT persistent
-on Cloud Run; move them to object storage (e.g. Supabase Storage) for a real
-deployment.
+Photos are stored in the database (table incident_photos, so they live in
+Turso when deployed) and cached on disk under data/uploads/. Free hosting wipes
+the disk when the server sleeps; the cache is rebuilt from the database.
 """
 import base64
 import hashlib
@@ -58,6 +58,15 @@ db.execute("""
         photo TEXT,
         reported_by TEXT NOT NULL, captured_at TEXT, created_at TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'reported', reviewed_by TEXT, reviewed_at TEXT
+    )
+""")
+# Photos are kept in the database too (base64), not only on disk: free hosting
+# (Render) wipes the server's disk whenever it sleeps or redeploys. The disk copy
+# under data/uploads is just a cache, rebuilt from the database on demand.
+db.execute("""
+    CREATE TABLE IF NOT EXISTS incident_photos (
+        name TEXT PRIMARY KEY,
+        data TEXT NOT NULL
     )
 """)
 # Columns added after the first version: add them to existing databases too
@@ -117,11 +126,27 @@ def _save_photo(data_b64: str) -> tuple:
     ext = "jpg" if raw[:3] == b"\xff\xd8\xff" else "png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else None
     if not ext:
         raise HTTPException(status_code=422, detail="Photo must be JPEG or PNG")
-    os.makedirs(UPLOADS, exist_ok=True)
     name = f"{uuid.uuid4().hex}.{ext}"
-    with open(os.path.join(UPLOADS, name), "wb") as f:
-        f.write(raw)
+    db.execute("INSERT INTO incident_photos (name, data) VALUES (?, ?)", (name, base64.b64encode(raw).decode()))
+    _cache_photo(name, raw)
     return name, hashlib.sha256(raw).hexdigest()
+
+
+def _cache_photo(name: str, raw: bytes) -> str:
+    os.makedirs(UPLOADS, exist_ok=True)
+    path = os.path.join(UPLOADS, name)
+    with open(path, "wb") as f:
+        f.write(raw)
+    return path
+
+
+def _photo_path(name: str) -> Optional[str]:
+    """Local file for a stored photo, restored from the database if the disk was wiped."""
+    path = os.path.join(UPLOADS, name)
+    if os.path.exists(path):
+        return path
+    row = db.fetchone("SELECT data FROM incident_photos WHERE name = ?", (name,))
+    return _cache_photo(name, base64.b64decode(row[0])) if row else None
 
 
 def _row_to_dict(row: tuple) -> dict:
@@ -162,7 +187,8 @@ def _enrich(incident_id: int, lat: float, lon: float, photo: Optional[str], inci
         if rp:
             points += rp[0]; added.append({"points": rp[0], "reason": rp[1]})
     if photo and credibility.ai_enabled():
-        verdict = credibility.ai_photo_check(os.path.join(UPLOADS, photo), incident_type, description)
+        path = _photo_path(photo)
+        verdict = credibility.ai_photo_check(path, incident_type, description) if path else None
         if verdict and verdict.get("points"):
             points += verdict["points"]; added.append({"points": verdict["points"], "reason": verdict["reason"]})
         elif verdict and verdict.get("error"):
@@ -259,7 +285,7 @@ def photo(name: str):
     stem, _, ext = name.partition(".")
     if len(stem) != 32 or not all(c in "0123456789abcdef" for c in stem) or ext not in ("jpg", "png"):
         raise HTTPException(status_code=404, detail="Not found")
-    path = os.path.join(UPLOADS, name)
-    if not os.path.exists(path):
+    path = _photo_path(name)
+    if not path:
         raise HTTPException(status_code=404, detail="Not found")
     return FileResponse(path, media_type="image/jpeg" if ext == "jpg" else "image/png")

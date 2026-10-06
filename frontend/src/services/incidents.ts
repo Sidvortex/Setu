@@ -5,6 +5,7 @@
  * never stored twice on the server.
  */
 import { getBackendUrl } from '../utils/backendUrl';
+import { waitForServer } from '../utils/serverWake';
 import { RoadBlockReason } from './logistics';
 
 export type Severity = 'Low' | 'Medium' | 'High';
@@ -39,6 +40,7 @@ async function call<T>(method: 'GET' | 'POST', path: string, token: string | nul
   if (!base) throw new Error('No backend URL configured.');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
+  await waitForServer(); // free hosting may be asleep: wait for the wake-up ping
   const res = await fetch(`${base}${path}`, {
     method, headers,
     body: body === undefined ? undefined : JSON.stringify(body),

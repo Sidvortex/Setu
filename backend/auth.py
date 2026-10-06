@@ -2,7 +2,7 @@
 Authority login system.
 
 Storage: Turso (production-ready, works on ephemeral deployments like
-Cloud Run) when TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are set; falls
+Render) when TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are set; falls
 back to a local sqlite file (backend/data/auth.db) otherwise, which is
 fine for local development but will NOT reliably persist accounts on
 most cloud deployments - most platforms give each instance/restart a
@@ -81,7 +81,7 @@ class _SqliteBackend:
 
 class _TursoBackend:
     """Turso (libsql) storage - the one that actually survives real
-    deployments, including serverless/ephemeral ones like Cloud Run."""
+    deployments, including free/ephemeral ones like Render's free plan."""
 
     def __init__(self):
         import libsql_client

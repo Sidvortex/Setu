@@ -45,6 +45,7 @@ async def lifespan(_: FastAPI):
     if auth.count_users() == 0:
         log.warning("[auth] No accounts yet - create one: python create_admin.py <username> <password>")
     log.info("[risk] BhooSuraksha link: %s", cfg.bhoosuraksha_api_url or "not configured (risk panel hidden)")
+    risk_client.wake()  # background ping so a sleeping BhooSuraksha starts booting now
     log.info("[cors] allowed origins: %s", ", ".join(cfg.origins))
     yield
     risk_client.close()
