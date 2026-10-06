@@ -34,7 +34,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "data", "auth.db")
 AUTH_SECRET = os.environ.get("AUTH_SECRET", "dev-only-insecure-secret-change-me")
 TOKEN_TTL_HOURS = 12
 
-TURSO_URL = os.environ.get("TURSO_DATABASE_URL")
+TURSO_URL = (os.environ.get("TURSO_DATABASE_URL") or "").strip() or None  # libsql://... is fine: turso_http uses HTTPS
 TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN")
 USING_TURSO = bool(TURSO_URL)
 
@@ -84,8 +84,8 @@ class _TursoBackend:
     deployments, including free/ephemeral ones like Render's free plan."""
 
     def __init__(self):
-        import libsql_client
-        self._libsql_client = libsql_client
+        import turso_http  # HTTPS client; the old libsql-client's WebSocket is refused by new Turso databases
+        self._libsql_client = turso_http
         self._ensure_table()
 
     def _client(self):
