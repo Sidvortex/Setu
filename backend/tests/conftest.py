@@ -7,7 +7,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 _tmp = tempfile.mkdtemp(prefix="setu-test-")
-os.environ.pop("TURSO_DATABASE_URL", None)
+if not os.environ.get("SETU_TEST_TURSO"):  # set it (plus TURSO_* vars) to run the suite against a Turso endpoint
+    os.environ.pop("TURSO_DATABASE_URL", None)
 os.environ.pop("BHOOSURAKSHA_API_URL", None)
 os.environ.pop("AI_PROVIDER", None)
 
