@@ -193,3 +193,11 @@ def test_photo_survives_a_wiped_disk(client, H):
     shutil.rmtree(incidents.UPLOADS)                       # what a Render spin-down does
     again = client.get(inc["photo_url"])
     assert again.status_code == 200 and again.content == first.content
+
+
+def test_turso_token_with_stray_newline_is_cleaned():
+    """A token pasted into Render with a trailing newline must not break the connection header."""
+    import turso_http
+    c = turso_http.create_client_sync("libsql://db-x.turso.io\n", auth_token="abc.def.ghi\n ")
+    assert c._headers == {"Authorization": "Bearer abc.def.ghi"}
+    assert c._endpoint == "https://db-x.turso.io/v2/pipeline"

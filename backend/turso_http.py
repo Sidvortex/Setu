@@ -83,7 +83,10 @@ class Client:
         if not url:
             raise TursoError("TURSO_DATABASE_URL is empty")
         self._endpoint = _base_url(url) + "/v2/pipeline"
-        self._headers = {"Authorization": f"Bearer {auth_token}"} if auth_token else {}
+        # Tokens pasted into a dashboard often carry a trailing newline or spaces,
+        # which are illegal in an HTTP header ("Illegal header value ... \n").
+        token = "".join((auth_token or "").split())
+        self._headers = {"Authorization": f"Bearer {token}"} if token else {}
 
     def execute(self, sql: str, args: Optional[Sequence[Any]] = None) -> ResultSet:
         body = {"requests": [
