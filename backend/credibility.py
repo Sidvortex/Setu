@@ -12,6 +12,7 @@ Score 0-100, starting at 50, from rule-based checks that need no API key:
 Optional AI photo check (set AI_PROVIDER + key): a vision model looks at the
 photo and says whether it shows the reported kind of road problem and whether
 it looks like a stock / edited image. Adjusts the score and adds its reasons.
+  (all read through config.py)
   AI_PROVIDER=gemini     GEMINI_API_KEY=...   (Google AI Studio free tier works without billing)
   AI_PROVIDER=anthropic  ANTHROPIC_API_KEY=...
   AI_MODEL=<optional override>   defaults: gemini-2.5-flash / claude-sonnet-5
@@ -20,14 +21,21 @@ Levels: >= 70 likely genuine, 40-69 needs checking, < 40 likely false.
 import base64
 import json
 import os
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-AI_PROVIDER = os.environ.get("AI_PROVIDER", "").lower()
-AI_MODEL = os.environ.get("AI_MODEL") or {"gemini": "gemini-2.5-flash", "anthropic": "claude-sonnet-5"}.get(AI_PROVIDER, "")
+import httpx
+
+from config import settings
+
+DEFAULT_MODELS = {"gemini": "gemini-2.5-flash", "anthropic": "claude-sonnet-5"}
+# Overridable only for tests (pointing at a mock server)
 GEMINI_URL = os.environ.get("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta")
 ANTHROPIC_URL = os.environ.get("ANTHROPIC_API_URL", "https://api.anthropic.com/v1/messages")
+
+
+def _model() -> str:
+    return settings().ai_model or DEFAULT_MODELS.get(settings().ai_provider, "")
 
 
 REUSED_PHOTO_CAP = 35  # a photo copied from another report is near-proof of a fake, whatever else scores well
@@ -62,11 +70,9 @@ def rule_score(*, source: str, has_photo: bool, snap_m: Optional[float], photo_r
         add(-40, f"Same photo already used in report #{photo_reused_in}")
     if nearby_reports:
         add(min(30, 15 * nearby_reports), f"{nearby_reports} other report(s) within 1 km in the last 48 h")
-    if incident_type == "Landslide" and landslide_risk:
-        if landslide_risk in ("HIGH", "VERY_HIGH", "CRITICAL"):
-            add(10, f"Landslide risk here is {landslide_risk.replace('_', ' ')} today (BhooSuraksha)")
-        elif landslide_risk == "LOW":
-            add(-10, "Landslide risk here is LOW today (BhooSuraksha)")
+    rp = risk_points(incident_type, landslide_risk)
+    if rp:
+        add(*rp)
     if captured_at:
         try:
             t = datetime.fromisoformat(captured_at.replace("Z", "+00:00"))
@@ -82,6 +88,17 @@ def rule_score(*, source: str, has_photo: bool, snap_m: Optional[float], photo_r
     return cap(score, why), why
 
 
+def risk_points(incident_type: str, landslide_risk: Optional[str]) -> Optional[tuple]:
+    """Landslide reports that agree / disagree with BhooSuraksha's risk for that place today."""
+    if incident_type != "Landslide" or not landslide_risk:
+        return None
+    if landslide_risk in ("HIGH", "VERY_HIGH", "CRITICAL"):
+        return 10, f"Landslide risk here is {landslide_risk.replace('_', ' ')} today (BhooSuraksha)"
+    if landslide_risk == "LOW":
+        return -10, "Landslide risk here is LOW today (BhooSuraksha)"
+    return None
+
+
 _PROMPT = """You are checking a road-incident report submitted to a disaster-logistics platform in North East India.
 Reported problem type: {type}. Reporter's description: "{desc}".
 Look at the photo and answer ONLY with a JSON object, no other text:
@@ -91,31 +108,28 @@ Look at the photo and answer ONLY with a JSON object, no other text:
 
 
 def _call_gemini(image_b64: str, mime: str, prompt: str) -> str:
-    key = os.environ["GEMINI_API_KEY"]
     body = {"contents": [{"parts": [{"inline_data": {"mime_type": mime, "data": image_b64}}, {"text": prompt}]}],
             "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}}
-    req = urllib.request.Request(f"{GEMINI_URL}/models/{AI_MODEL}:generateContent?key={key}",
-                                 json.dumps(body).encode(), {"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = json.loads(r.read())
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+    r = httpx.post(f"{GEMINI_URL}/models/{_model()}:generateContent", params={"key": settings().gemini_api_key},
+                   json=body, timeout=settings().ai_timeout_s)
+    r.raise_for_status()
+    return r.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def _call_anthropic(image_b64: str, mime: str, prompt: str) -> str:
-    body = {"model": AI_MODEL, "max_tokens": 300,
+    body = {"model": _model(), "max_tokens": 300,
             "messages": [{"role": "user", "content": [
                 {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
                 {"type": "text", "text": prompt}]}]}
-    req = urllib.request.Request(ANTHROPIC_URL, json.dumps(body).encode(), {
-        "Content-Type": "application/json", "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = json.loads(r.read())
-    return "".join(b.get("text", "") for b in data["content"] if b.get("type") == "text")
+    r = httpx.post(ANTHROPIC_URL, json=body, timeout=settings().ai_timeout_s,
+                   headers={"x-api-key": settings().anthropic_api_key, "anthropic-version": "2023-06-01"})
+    r.raise_for_status()
+    return "".join(b.get("text", "") for b in r.json()["content"] if b.get("type") == "text")
 
 
 def ai_enabled() -> bool:
-    return (AI_PROVIDER == "gemini" and bool(os.environ.get("GEMINI_API_KEY"))) or \
-           (AI_PROVIDER == "anthropic" and bool(os.environ.get("ANTHROPIC_API_KEY")))
+    s = settings()
+    return (s.ai_provider == "gemini" and bool(s.gemini_api_key)) or (s.ai_provider == "anthropic" and bool(s.anthropic_api_key))
 
 
 def ai_photo_check(photo_path: str, incident_type: str, description: Optional[str]) -> Optional[dict]:
@@ -127,7 +141,7 @@ def ai_photo_check(photo_path: str, incident_type: str, description: Optional[st
     mime = "image/png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
     prompt = _PROMPT.format(type=incident_type, desc=(description or "none").replace('"', "'")[:500])
     try:
-        call = _call_gemini if AI_PROVIDER == "gemini" else _call_anthropic
+        call = _call_gemini if settings().ai_provider == "gemini" else _call_anthropic
         text = call(base64.b64encode(raw).decode(), mime, prompt).strip()
         verdict = json.loads(text[text.find("{"): text.rfind("}") + 1])
     except Exception as e:  # network, quota, bad JSON: report still goes to review, just without AI
@@ -142,4 +156,4 @@ def ai_photo_check(photo_path: str, incident_type: str, description: Optional[st
     elif not verdict.get("matches_reported_type"):
         points -= 15; reasons.append(f"AI: photo doesn't look like a {incident_type.lower()}")
     return {**verdict, "points": points, "reason": "; ".join(reasons) or "AI: no strong signal",
-            "provider": AI_PROVIDER, "model": AI_MODEL}
+            "provider": settings().ai_provider, "model": _model()}

@@ -152,19 +152,28 @@ def _ip_hash(request: Request) -> str:
     return hashlib.sha256(f"{auth.AUTH_SECRET}|{ip}".encode()).hexdigest()[:32]  # never store raw IPs
 
 
-def _run_ai_check(incident_id: int, photo: str, incident_type: str, description: Optional[str]):
-    verdict = credibility.ai_photo_check(os.path.join(UPLOADS, photo), incident_type, description)
-    if not verdict:
+def _enrich(incident_id: int, lat: float, lon: float, photo: Optional[str], incident_type: str, description: Optional[str]):
+    """Background checks that call other services (BhooSuraksha, AI). They run after the
+    report is saved and acknowledged, so a slow or down service never delays a reporter."""
+    added, points, verdict = [], 0, None
+    if incident_type == "Landslide" and risk_client.configured():
+        risk = risk_client.district_risk(lat, lon)
+        rp = credibility.risk_points(incident_type, risk["risk_level"] if risk else None)
+        if rp:
+            points += rp[0]; added.append({"points": rp[0], "reason": rp[1]})
+    if photo and credibility.ai_enabled():
+        verdict = credibility.ai_photo_check(os.path.join(UPLOADS, photo), incident_type, description)
+        if verdict and verdict.get("points"):
+            points += verdict["points"]; added.append({"points": verdict["points"], "reason": verdict["reason"]})
+        elif verdict and verdict.get("error"):
+            added.append({"points": 0, "reason": verdict["error"]})
+    if not added and not verdict:
         return
     row = db.fetchone("SELECT credibility, credibility_reasons FROM incidents WHERE id = ?", (incident_id,))
-    reasons = json.loads(row[1] or "[]")
-    if verdict.get("points"):
-        reasons.append({"points": verdict["points"], "reason": verdict["reason"]})
-    elif verdict.get("error"):
-        reasons.append({"points": 0, "reason": verdict["error"]})
-    score = credibility.cap((row[0] or 50) + verdict.get("points", 0), reasons)
-    db.execute("UPDATE incidents SET credibility = ?, credibility_reasons = ?, ai_verdict = ? WHERE id = ?",
-               (score, json.dumps(reasons), json.dumps(verdict), incident_id))
+    reasons = json.loads(row[1] or "[]") + added
+    score = credibility.cap((row[0] or 50) + points, reasons)
+    db.execute("UPDATE incidents SET credibility = ?, credibility_reasons = ?, ai_verdict = COALESCE(?, ai_verdict) WHERE id = ?",
+               (score, json.dumps(reasons), json.dumps(verdict) if verdict else None, incident_id))
 
 
 def _create(inc: IncidentIn, reported_by: str, source: str, ip_hash: Optional[str], contact: Optional[str], tasks: BackgroundTasks) -> dict:
@@ -178,10 +187,10 @@ def _create(inc: IncidentIn, reported_by: str, source: str, ip_hash: Optional[st
     nearby = db.fetchone(
         "SELECT COUNT(*) FROM incidents WHERE created_at > ? AND ABS(lat - ?) < 0.009 AND ABS(lon - ?) < 0.01 "
         "AND status != 'rejected' AND COALESCE(ip_hash, reported_by) != ?", (since, inc.lat, inc.lon, ip_hash or reported_by))[0]
-    risk = risk_client.district_risk(inc.lat, inc.lon) if inc.incident_type == "Landslide" else None
+    # (landslide-risk and AI checks run in the background: see _enrich)
     score, reasons = credibility.rule_score(
         source=source, has_photo=bool(photo), snap_m=snap, photo_reused_in=reused[0] if reused else None,
-        nearby_reports=int(nearby), landslide_risk=risk["risk_level"] if risk else None, incident_type=inc.incident_type,
+        nearby_reports=int(nearby), landslide_risk=None, incident_type=inc.incident_type,
         captured_at=inc.captured_at, description=inc.description)
     db.execute(
         "INSERT INTO incidents (client_id, lat, lon, edge_id, snap_m, incident_type, severity, description, photo, reported_by, captured_at, created_at, "
@@ -189,8 +198,8 @@ def _create(inc: IncidentIn, reported_by: str, source: str, ip_hash: Optional[st
         (inc.client_id, inc.lat, inc.lon, edge_id, snap, inc.incident_type, inc.severity, inc.description, photo,
          reported_by, inc.captured_at, datetime.now(timezone.utc).isoformat(), source, ip_hash, sha, contact, score, json.dumps(reasons)))
     new_id = db.fetchone("SELECT id FROM incidents WHERE client_id = ?", (inc.client_id,))[0]
-    if photo and credibility.ai_enabled():
-        tasks.add_task(_run_ai_check, new_id, photo, inc.incident_type, inc.description)
+    if (inc.incident_type == "Landslide" and risk_client.configured()) or (photo and credibility.ai_enabled()):
+        tasks.add_task(_enrich, new_id, inc.lat, inc.lon, photo, inc.incident_type, inc.description)
     return {**_get(new_id), "duplicate": False}
 
 

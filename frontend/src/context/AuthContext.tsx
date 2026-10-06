@@ -21,9 +21,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('samparkne_auth_token'));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('setu_auth_token'));
   const [user, setUser] = useState<AuthUser | null>(() => {
-    const stored = localStorage.getItem('samparkne_auth_user');
+    const stored = localStorage.getItem('setu_auth_user');
     return stored ? JSON.parse(stored) : null;
   });
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -51,8 +51,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
       setToken(data.token);
       setUser(data.user);
-      localStorage.setItem('samparkne_auth_token', data.token);
-      localStorage.setItem('samparkne_auth_user', JSON.stringify(data.user));
+      localStorage.setItem('setu_auth_token', data.token);
+      localStorage.setItem('setu_auth_user', JSON.stringify(data.user));
       return true;
     } catch {
       setLoginError('Could not reach the backend. Is it running?');
@@ -65,8 +65,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('samparkne_auth_token');
-    localStorage.removeItem('samparkne_auth_user');
+    localStorage.removeItem('setu_auth_token');
+    localStorage.removeItem('setu_auth_user');
   };
 
   return (

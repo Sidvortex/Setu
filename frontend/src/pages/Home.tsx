@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Route, PhoneCall, LogIn, Ban, Users, Hospital, Truck, Navigation } from 'lucide-react';
+import { Route, PhoneCall, LogIn, Ban, Users, Hospital, Truck, Navigation, Camera } from 'lucide-react';
 import { PublicHeader } from '../components/PublicHeader';
 import { roadsApi, ConnectivitySummary } from '../services/logistics';
 import { HELPLINES } from '../data/helplines';
@@ -70,7 +70,7 @@ export const Home: React.FC = () => {
           {[
             { to: '/road-status', icon: Route, title: 'Live Road Status', desc: 'Which roads are blocked and who is cut off' },
             { to: '/route', icon: Navigation, title: 'Check a Route', desc: 'Fastest open route between any two places' },
-            { to: '/#helplines', icon: PhoneCall, title: 'Emergency Helplines', desc: '112, NDMA, SDRF, district control rooms' },
+            { to: '/report', icon: Camera, title: 'Report a Problem', desc: 'Landslide, flood or damage on a road? Send a photo' },
             { to: '/login', icon: LogIn, title: 'For Officials', desc: 'Report blockages, plan routes, see impact' },
           ].map(({ to, icon: Icon, title, desc }) => (
             <Link key={title} to={to} className="group bg-white border border-slate-800 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-600 transition flex gap-3 items-start">
@@ -90,7 +90,7 @@ export const Home: React.FC = () => {
               project, <a href={BHOOSURAKSHA_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">BhooSuraksha</a>.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              {[['Now', 'Live road status, cut-off impact, route planning, field incident reports'], ['Next', 'Vehicle & shipment tracking']].map(([k, v]) => (
+              {[['For officials', 'Road status, cut-off impact, route planning, field reports, shipment tracking'], ['For everyone', 'Road status, route checker, report a problem']].map(([k, v]) => (
                 <div key={k} className="bg-slate-950 rounded-lg p-3"><div className="font-semibold text-gov-navy">{k}</div><div className="text-xs text-slate-400">{v}</div></div>
               ))}
             </div>

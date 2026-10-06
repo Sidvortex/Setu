@@ -15,6 +15,16 @@ python create_admin.py <username> <password>      # officials' accounts; no publ
 uvicorn app:app --reload --port 8100
 ```
 
+All settings are listed in `backend/.env.example` (validated by `config.py`).
+
+### Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest -q          # 12 end-to-end tests, ~3 s — run before every push
+```
+
 Port 8100, so it can run next to BhooSuraksha's backend (8000). The startup log
 shows the account count and whether the BhooSuraksha link is configured.
 
@@ -43,6 +53,24 @@ automatically (the Officials Login page also lets you override the address).
 Sign in → you land on the Connectivity dashboard.
 
 ## Deploying
+
+Backend (Cloud Run), production settings:
+
+```bash
+cd backend
+gcloud run deploy setu-backend --source . --region asia-south1 --allow-unauthenticated \
+  --set-env-vars SETU_ENV=production,AUTH_SECRET="<64 random hex chars>",ALLOWED_ORIGINS="https://<your-setu-site>.vercel.app",BHOOSURAKSHA_API_URL="https://<bhoosuraksha-backend>.a.run.app",TURSO_DATABASE_URL="...",TURSO_AUTH_TOKEN="..."
+```
+
+- With `SETU_ENV=production` the backend **refuses to start** if `AUTH_SECRET` is
+  missing or short — on purpose.
+- Health checks: `/health` (process up) and `/ready` (database + road network
+  loaded; also shows the BhooSuraksha link's status). In Cloud Run you can set
+  `/ready` as the startup probe.
+- Every response has a `Server-Timing` header; requests over 1 s are logged as
+  "slow request" in Cloud Run's logs.
+- Python 3.12 is pinned by `backend/.python-version`; dependencies are pinned
+  in `requirements.txt` to the exact versions the tests passed with.
 
 **Frontend: set `VITE_BACKEND_URL`** (Vercel → Project → Settings →
 Environment Variables) to the backend's URL, e.g.
@@ -105,3 +133,14 @@ of quota, reports still work; the reviewer sees "AI check unavailable".
 WhatsApp; they open it and tap **Start sharing location**. Browsers only share
 GPS on **https** pages, so this works on the Vercel deployment (or localhost),
 not over a plain-http local network address.
+
+## How the BhooSuraksha link behaves
+
+- Answers are cached per place per day (`RISK_CACHE_MINUTES`).
+- If BhooSuraksha fails or times out (`BHOOSURAKSHA_TIMEOUT_S`), Setu stops
+  calling it for `RISK_FAILURE_COOLDOWN_S` — so a down service costs one timeout,
+  not one per request.
+- Reports never wait for it: the landslide-risk check on reports runs in the
+  background after the reporter already has their "received".
+- `/ready` shows whether the link is configured, its last result, and whether
+  it's cooling down.

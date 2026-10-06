@@ -49,6 +49,7 @@ export const PublicHeader: React.FC = () => {
     { label: t('nav.home'), to: '/' },
     { label: t('nav.roadStatus'), to: '/road-status' },
     { label: t('nav.routeCheck'), to: '/route' },
+    { label: t('nav.report'), to: '/report' },
     { label: t('nav.about'), items: [
       { label: 'About Setu', to: '/#about' },
       { label: 'Data sources', to: '/#data' },

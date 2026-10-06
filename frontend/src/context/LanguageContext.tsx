@@ -17,6 +17,7 @@ const DICTIONARY: Record<string, { en: string; hi: string }> = {
   'nav.home': { en: 'Home', hi: 'मुखपृष्ठ' },
   'nav.roadStatus': { en: 'Road Status', hi: 'सड़क स्थिति' },
   'nav.routeCheck': { en: 'Check a Route', hi: 'मार्ग जाँचें' },
+  'nav.report': { en: 'Report a Problem', hi: 'समस्या बताएँ' },
   'nav.about': { en: 'About', hi: 'परिचय' },
   'nav.resources': { en: 'Resources', hi: 'संसाधन' },
   'nav.emergency': { en: 'Emergency Contacts', hi: 'आपातकालीन संपर्क' },

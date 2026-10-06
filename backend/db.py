@@ -2,14 +2,14 @@
 Shared storage for Setu's operational data (road status, and later
 incidents / shipments). Same pattern as auth.py: Turso when
 TURSO_DATABASE_URL + TURSO_AUTH_TOKEN are set, otherwise a local SQLite file
-(data/sampark.db). Local SQLite is fine for development but does not persist
+(data/setu.db). Local SQLite is fine for development but does not persist
 on Cloud Run — use Turso for any deployment.
 """
 import os
 import sqlite3
 from typing import Any, List, Optional, Sequence
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "sampark.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "setu.db")
 TURSO_URL = os.environ.get("TURSO_DATABASE_URL")
 TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN")
 USING_TURSO = bool(TURSO_URL)

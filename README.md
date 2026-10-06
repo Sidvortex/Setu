@@ -62,6 +62,8 @@ backend/    FastAPI
   incidents.py     field incident reports (GPS + photo), public + official, verify / reject
   credibility.py   credibility score for reports: rule checks + optional AI photo check
   shipments.py     shipments, driver tracking links, live ETA / delay / alerts
+  config.py        all settings, validated (pydantic-settings); production safety checks
+  tests/           end-to-end API tests (pytest) — python -m pytest -q
   risk_client.py   landslide risk from BhooSuraksha (sister project) over HTTP
   auth.py, db.py   officials' login; storage (local SQLite or Turso)
   data/networks/ner/          routable NER road network (from BhooSuraksha's data-pipeline)
