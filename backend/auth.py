@@ -9,7 +9,7 @@ most cloud deployments - most platforms give each instance/restart a
 fresh, empty filesystem. If you've deployed this and logins fail with
 "incorrect username or password" even though you're sure they're right,
 this is almost always why: the account only exists in your local file,
-not wherever the backend is actually running. See SETUP.md.
+not wherever the backend is actually running. See docs/ (deployment).
 
 Passwords are hashed with bcrypt (never stored in plain text). Sessions
 are stateless JWTs signed with AUTH_SECRET (set this env var in
@@ -118,6 +118,15 @@ def create_user(username: str, password: str, role: str = "authority") -> None:
         "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
         (username, password_hash, role, datetime.now(timezone.utc).isoformat()),
     )
+
+
+def set_password(username: str, password: str) -> bool:
+    """Change an existing account's password. Returns False if there is no such account."""
+    if not get_user_by_username(username):
+        return False
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    _backend.execute("UPDATE users SET password_hash = ? WHERE username = ?", (password_hash, username))
+    return True
 
 
 def verify_login(username: str, password: str) -> Optional[dict]:
